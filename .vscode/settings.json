@@ -1,0 +1,14 @@
+{
+    "clangd.arguments": [
+        "--background-index",
+        "--compile-commands-dir=build",
+        "-j=16",
+        "--clang-tidy",
+        "--all-scopes-completion",
+        "--completion-style=detailed",
+        "--header-insertion=never",
+        "--pch-storage=disk",
+        "--cross-file-rename",
+        "--header-insertion-decorators"
+    ]
+}

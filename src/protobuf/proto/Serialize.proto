@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+message FileAttribute {
+    fixed32 dwFileAttributes = 1;
+    fixed64 ftCreationTime = 2;
+    fixed64 ftLastAccessTime = 3;
+    fixed64 ftLastWriteTime = 4;
+
+    fixed64 file_origin_size = 5;
+}
+
+message FileDesc {
+    FileAttribute attribute = 1;
+    string guid = 2;
+}
+
+message FileList {
+    map<string, FileDesc> projects = 1;
+}
