@@ -1,9 +1,8 @@
 #include "base/DataChunk.h"
-#include "config.h"
 #include "file.h"
 #include "base/HandleWrapper.h"
 #include "base/SyncerException.h"
-#include <Serialize.pb.h>
+#include <proto/Serialize.pb.h>
 #include <fstream>
 #include <iostream>
 

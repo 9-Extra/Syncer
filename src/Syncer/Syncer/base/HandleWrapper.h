@@ -9,6 +9,10 @@ struct HandleWrapper {
 
     HandleWrapper(HANDLE handle = INVALID_HANDLE_VALUE) : handle(handle){}
 
+    HandleWrapper(HandleWrapper&& other) : handle(other.handle){
+        other.handle = INVALID_HANDLE_VALUE;
+    }
+
     bool is_vaild() { return handle != INVALID_HANDLE_VALUE; }
 
     HandleWrapper& operator=(HandleWrapper&& other){
@@ -24,12 +28,4 @@ struct HandleWrapper {
         }
     }
 };
-
-//打开文件HANDLE，不追踪Symlink
-inline HandleWrapper open_file_read(const std::filesystem::path &path) {
-    return HandleWrapper{
-        CreateFileW(path.wstring().c_str(), GENERIC_READ, FILE_SHARE_READ, NULL,
-                    OPEN_EXISTING,
-                    FILE_ATTRIBUTE_READONLY | FILE_FLAG_SEQUENTIAL_SCAN | FILE_FLAG_OPEN_REPARSE_POINT, NULL)};
-}
 }

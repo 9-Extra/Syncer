@@ -14,7 +14,7 @@ target_sources(${TARGET_NAME} PUBLIC ${sources})
 target_include_directories(${TARGET_NAME} PUBLIC .)
 
 # # 操作系统库，只需要链接
-# target_link_libraries(${TARGET_NAME} PUBLIC "icu.lib")
+target_link_libraries(${TARGET_NAME} PUBLIC "Rpcrt4.lib")
 # 第三方的库
 target_link_libraries(${TARGET_NAME} PUBLIC configor proto-serialize)
 

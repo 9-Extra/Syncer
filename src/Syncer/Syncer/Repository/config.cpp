@@ -1,6 +1,6 @@
 #include "config.h"
 
-#include "Base/SyncerException.h"
+#include "../Base/SyncerException.h"
 #include <format>
 #include <fstream>
 

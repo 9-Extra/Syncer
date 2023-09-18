@@ -1,14 +1,13 @@
 #pragma once
 
 #include <filesystem>
-#include <span>
 #include <vector>
+#include <iostream>
 
 namespace Syncer {
-template <class T> std::span<const uint8_t> fill_struct(T *stu, std::span<const uint8_t> data) {
-    assert(sizeof(T) <= data.size_bytes());
-    memcpy(stu, data.data(), sizeof(T));
-    return data.subspan(sizeof(T));
+template <class T> void* fill_struct(T &stu, void* const ptr) {
+    memcpy(&stu, ptr, sizeof(T));
+    return (void*)((char*)ptr + sizeof(T));
 }
 struct DataChunk {
     void *start;
@@ -20,11 +19,15 @@ struct DataChunk {
         this->size = size;
     }
 
-    DataChunk(const DataChunk &other) = delete;
+    DataChunk(const DataChunk& other) : DataChunk(other.size){
+        memcpy(this->start, other.start, this->size);
+        std::cout << "DataChunk Copy!!!" << std::endl;
+    }
 
     DataChunk(DataChunk &&other) : start(other.start), size(other.size) {
         other.start = nullptr;
         other.size = 0;
+        std::cout << "DataChunk move" << std::endl;
     }
 
     DataChunk &operator=(DataChunk &&other) {

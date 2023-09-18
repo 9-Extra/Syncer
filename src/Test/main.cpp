@@ -1,11 +1,12 @@
+#include <Syncer/Repository/LocalRepository.h>
 #include <Syncer/base/DataChunk.h>
+#include <Syncer/packer.h>
 #include <Syncer/syncer.h>
 #include <configor/json.hpp>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <Syncer/packer.h>
-#include <Syncer/Repository.h>
+
 
 namespace fs = std::filesystem;
 
@@ -16,16 +17,30 @@ int main() {
         // auto config = Syncer::load_config("syncer.json");
         // std::cout << "Root: " << config.root << std::endl << "Name: " << config.name << std::endl;
 
-        // Syncer::pack(config.root, "./tar", Syncer::FileFiliter());
+        // Syncer::pack(".", "C:/Users/77313/Desktop/新建文件夹/test", Syncer::FileFiliter());
 
-        Syncer::RepositoryAccessor resp("./resp");
-        resp.flush();
+        Syncer::LocalRepository resp(".", "./strage");
+        FILE_BASIC_INFO info;
+        Syncer::DataChunk content(100);
+        const char str[] = "daowcjdowmacucdiowamj2132321";
+        memcpy(content.start, str, sizeof(str));
+
+        Syncer::FileObject file = Syncer::FileObject::build_file(info, std::move(content));
+        std::ofstream out("./write.txt");
+        file.write(out);
+        out.close();
+
+        Syncer::FileObject read = Syncer::FileObject::open("write.txt");
+
+        std::cout << read.get_type() << std::endl;
 
 
     } catch (const Syncer::SyncerException &e) {
-            std::cerr << "Error: " << e.what() << std::endl;
-            return -1;
-        }
+        std::cerr << "Error: " << e.what() << std::endl;
+        return -1;
+    }
 
-        return 0;
+    std::cout << "end\n";
+
+    return 0;
 }

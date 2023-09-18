@@ -3,6 +3,9 @@
 #include <Windows.h>
 #include <cstdint>
 #include <filesystem>
+#include "base/DataChunk.h"
+#include "base/SyncerException.h"
+#include "base/HandleWrapper.h"
 
 template <> struct std::hash<FILE_ID_INFO> {
     size_t operator()(FILE_ID_INFO info) const {
@@ -32,7 +35,9 @@ template <> struct std::equal_to<FILE_ID_INFO> {
 
 namespace Syncer {
 
-namespace fs = std::filesystem;
-
-
+DataChunk read_whole_file(HANDLE handle);
+void write_whole_file_and_arrtibute(const std::filesystem::path &path, const FILE_BASIC_INFO &attribute,
+                                         const DataChunk &content);
+//打开文件HANDLE，不追踪Symlink
+HandleWrapper open_file_read(const std::filesystem::path &path);
 } // namespace Syncer
