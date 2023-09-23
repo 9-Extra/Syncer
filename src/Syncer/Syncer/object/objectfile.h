@@ -22,6 +22,17 @@ public:
 
     ObjectType get_type() const { return (ObjectType)data.index(); }
 
+    FileObject(FileObject&& other){
+        data = std::move(other.data);
+        other.data.emplace<std::monostate>();
+    }
+
+    FileObject& operator=(FileObject&& other){
+        data = std::move(other.data);
+        other.data.emplace<std::monostate>();
+        return *this;
+    }
+
     ~FileObject() {}
 
     static FileObject open(const fs::path &path);
@@ -29,6 +40,18 @@ public:
     static FileObject build_file(const FILE_BASIC_INFO &attribute, DataChunk&& content) {
         FileObject object;
         object.data.emplace<FileInfo>(attribute, std::forward<DataChunk>(content));
+        return object;
+    }
+
+    static FileObject build_symlink(const FILE_BASIC_INFO &attribute, const fs::path& target){
+        FileObject object;
+        object.data.emplace<Symlink>(attribute, target);
+        return object;
+    }
+
+    static FileObject build_empty_directory(const FILE_BASIC_INFO &attribute){
+        FileObject object;
+        object.data.emplace<Directory>(attribute, std::vector<std::string>{});
         return object;
     }
 

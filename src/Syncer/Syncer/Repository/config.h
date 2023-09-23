@@ -1,29 +1,21 @@
 #pragma once
 
-#include <configor/json.hpp>
 #include <filesystem>
 #include <string>
-#include <variant>
-
+#include "../base/BackupTime.h"
 
 namespace Syncer {
 
 namespace fs = std::filesystem;
 
-struct AutoBackupConfigLocal{
+struct AutoBackupConfig{
     uint64_t interval;
-    fs::path target_path;
+    SyTimePoint last_backup_time;
 };
-
-struct AutoBackupConfigRemote{
-    uint64_t interval;
-    std::string provider;
-};
-
-
 struct RepositoryConfig {
     std::string name;
     fs::path root;
+    fs::path target_path;
 
     std::vector<std::string> filter_list;
 
@@ -34,7 +26,7 @@ struct RepositoryConfig {
         std::string key;
     } encryption;
 
-    std::vector<std::variant<AutoBackupConfigLocal, AutoBackupConfigRemote>> autobackup_list;
+    std::vector<AutoBackupConfig> autobackup_list;
 };
 
 } // namespace Syncer

@@ -2,10 +2,11 @@
 #include <Syncer/base/DataChunk.h>
 #include <Syncer/packer.h>
 #include <Syncer/syncer.h>
-#include <configor/json.hpp>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <chrono>
+#include <nlohmann/json.hpp>
 
 
 namespace fs = std::filesystem;
