@@ -16,7 +16,7 @@ int main() {
         desc.enable_autobackup = true;
         desc.auto_backup_config.interval = 100;
 
-        Syncer::register_repository(desc, false);
+        Syncer::register_repository(desc, true);
 
         for (auto& i : Syncer::list_repository()){
             std::cout << i.last_backup_time << std::endl;

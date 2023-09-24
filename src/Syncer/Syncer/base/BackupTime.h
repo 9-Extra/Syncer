@@ -7,7 +7,7 @@ namespace Syncer {
     using SyTimePoint = std::chrono::system_clock::time_point;
     
     inline std::string to_loacltime(const SyTimePoint point){
-        time_t t = SyTimePoint::clock::to_time_t(SyTimePoint::clock::now());
+        time_t t = SyTimePoint::clock::to_time_t(point);
         struct tm tm;
         localtime_s(&tm, &t);
         

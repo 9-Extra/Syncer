@@ -10,10 +10,11 @@ namespace Syncer {
 namespace fs = std::filesystem;
 
 static void do_backup(RepositoryConfig& config){
+
     for(AutoBackupConfig& c : config.autobackup_list){
         c.last_backup_time = SyTimePoint::clock::now();
     }
-    pack(config.root, config.target_path, FileFiliter());
+    store(config.root, config.target_path, FileFiliter());
 }
 
 void init_backup_system(){

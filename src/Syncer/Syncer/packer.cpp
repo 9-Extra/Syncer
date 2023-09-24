@@ -1,5 +1,5 @@
 #include "packer.h"
-
+#include "object1/objectfile.h"
 namespace Syncer {
 
 FILE_ID_INFO get_file_identity(HANDLE file) {
@@ -12,7 +12,7 @@ FILE_ID_INFO get_file_identity(HANDLE file) {
 }
 
 struct FileInfo {
-    Syncer::HandleWrapper handle;
+    DataChunk content;
     FILE_BASIC_INFO attibute;            // 需要使用LastWirteTime来判断是否需要更新
     std::vector<fs::path> standard_path; // 硬连接具有多个path
 };
@@ -55,14 +55,15 @@ static DirectoryFiles load_file_list(const fs::path &root, const FileFiliter &fi
                     } else {
                         // 新文件，添加记录
                         FileInfo file;
-                        file.handle = std::move(handle);
-                        if (!GetFileInformationByHandleEx(file.handle.handle, FileBasicInfo, &file.attibute,
+                        if (!GetFileInformationByHandleEx(handle.handle, FileBasicInfo, &file.attibute,
                                                           sizeof(FILE_BASIC_INFO))) {
                             throw Syncer::SyncerException(std::format("获取文件属性失败: {}", abs_path.string()));
                         }
                         // 对属性进行过滤
                         if (filiter.filiter_attribute(standard_path, file.attibute)) {
-                            file.standard_path.push_back(std::move(standard_path));
+                            file.standard_path.push_back(std::move(standard_path));//记录路径
+                            file.content = read_whole_file(handle.handle);//记录内容
+
                             result.files.push_back(std::move(file));
 
                             hard_link_map[info] = result.files.size() - 1;
@@ -116,7 +117,7 @@ static DirectoryFiles load_file_list(const fs::path &root, const FileFiliter &fi
     return result;
 }
 
-void pack(const fs::path &root, const fs::path &target, const FileFiliter &filiter) {
+void copy(const fs::path &root, const fs::path &target, const FileFiliter &filiter) {
     // uint32_t updated_file_count = 0;
     // uint32_t totol_file_count = 0;
 
@@ -169,7 +170,7 @@ void pack(const fs::path &root, const fs::path &target, const FileFiliter &filit
     }
 
     for (const auto &info : file_list) {
-        DataChunk file_content = read_whole_file(info.handle.handle);
+        const DataChunk& file_content = info.content;
         const fs::path &p = info.standard_path[0];
         std::cout << "Writing file " << p << std::endl;
         // 创建第一个文件
@@ -185,6 +186,38 @@ void pack(const fs::path &root, const fs::path &target, const FileFiliter &filit
                 throw SyncerException(std::format("创建硬连接 {} 失败: {}", p.string(), e.what()));
             }
         }
+    }
+}
+
+void store(const fs::path &root, const fs::path &target, const FileFiliter &filiter){
+    auto [file_list, symlink_list, directory_list] = load_file_list(root, filiter);
+
+    try {
+        fs::remove_all(target);
+    } catch (const fs::filesystem_error &e) {
+        throw SyncerException(std::format("删除 {} 失败: {}", target.string(), e.what()));
+    }
+
+    std::vector<FileObject> pool;//除了文件夹以外的
+    std::unordered_map<fs::path, FileObject> dir_object_map;
+    for (auto &dir : directory_list) {
+        pool.emplace_back(FileObject::build_empty_directory(dir.standard_path, dir.attibute));
+    }
+
+    for (auto &link : symlink_list) {
+        pool.emplace_back(FileObject::build_symlink(link.standard_path, link.attibute, link.target_path));
+    }
+
+    for (auto &info : file_list) {
+        std::vector refs(info.standard_path.begin() + 1, info.standard_path.end());
+        pool.emplace_back(FileObject::build_file(info.standard_path[0], info.attibute, refs, std::move(info.content)));
+    }
+
+    fs::create_directories(target);
+    for(FileObject& o : pool){
+        fs::path p = target / o.sha1();
+        std::ofstream file(p);
+        o.write(file);
     }
 }
 } // namespace Syncer

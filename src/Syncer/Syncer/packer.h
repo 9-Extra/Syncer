@@ -19,6 +19,8 @@ public:
     virtual bool filiter_attribute(const fs::path &path, const FILE_BASIC_INFO &attribute) const { return true; }
 };
 
-void pack(const fs::path &root, const fs::path &target, const FileFiliter &filiter);
+void copy(const fs::path &root, const fs::path &target, const FileFiliter &filiter);
+
+void store(const fs::path &root, const fs::path &target, const FileFiliter &filiter);
 
 } // namespace Syncer

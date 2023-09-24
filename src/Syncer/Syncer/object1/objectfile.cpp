@@ -3,9 +3,18 @@
 
 namespace Syncer {
 
-namespace FileObject {
-
 namespace fs = std::filesystem;
+
+static void write_string(const std::string& str, std::ostream &stream){
+    stream << str << '\0';
+}
+
+static std::string load_string(const char** ptr){
+    const char* start = *ptr;
+    for(;**ptr != '\0';(*ptr)++);
+    return std::string(start, (*ptr)++);
+}
+
 
 FileObject FileObject::open(const fs::path &path) {
     DataChunk content = read_whole_file(open_file_read(path).handle);
@@ -14,34 +23,31 @@ FileObject FileObject::open(const fs::path &path) {
         throw SyncerException("无效Object");
     }
     FileObject object;
+    const char *ptr = (char*)fill_struct(object.attribute, (char *)content.start + sizeof(FileHead));
+
+    object.standard_path = load_string(&ptr);
+
     switch ((ObjectType)head->object_type) {
     case REGULAR_FILE: {
         FileInfo &info = object.data.emplace<FileInfo>();
-        const void *ptr = fill_struct(info.attribute, (char *)content.start + sizeof(FileHead));
-        info.content = DataChunk(content.size - sizeof(FileHead) - sizeof(FILE_BASIC_INFO));
+        uint32_t hard_link_ref_count;
+        ptr = (char*)fill_struct(hard_link_ref_count, ptr);
+        for(uint32_t i = 0;i < hard_link_ref_count;i++){
+            info.hard_link_paths.emplace_back(load_string(&ptr));
+        }
+        info.content = DataChunk((char*)content.start + content.size - ptr);
         memcpy(info.content.start, ptr, info.content.size);
         break;
     }
     case SYMLINK: {
         Symlink &link = object.data.emplace<Symlink>();
-        const void *ptr = fill_struct(link.attribute, (char *)content.start + sizeof(FileHead));
         wchar_t *str_start = (wchar_t *)ptr;
         wchar_t *str_end = (wchar_t *)((char *)content.start + content.size);
         link.target = fs::path(std::wstring(str_start, str_end + 1));
         break;
     }
     case DIRECTORY: {
-        Directory &dir = object.data.emplace<Directory>();
-        void *ptr = fill_struct(dir.attribute, (char *)content.start + sizeof(FileHead));
-        uint32_t entry_count;
-        ptr = fill_struct(entry_count, ptr);
-        for(uint32_t i = 0;i < entry_count;i++){
-            char* end = (char*)ptr;
-            for(;*end != '\n';end++);
-            dir.children_name.emplace_back((char*)ptr, end);
-            ptr = end + 1;
-        }
-
+        object.data.emplace<Directory>();
         break;
     }
     default: {
@@ -53,10 +59,8 @@ FileObject FileObject::open(const fs::path &path) {
 }
 
 std::string FileObject::sha1(){
-    std::stringstream s;
-    write(s);
     SHA1 sha1;
-    sha1.update(s);
+    sha1.update(standard_path.string());
     return sha1.final();
 }
 
@@ -66,33 +70,29 @@ void FileObject::write(std::ostream &stream) {
     stream.write("sync", 4);
     int object_type = (int)data.index();
     stream.write((char *)&object_type, sizeof(int));
+    stream.write((char *)&attribute, sizeof(attribute));
+    write_string(standard_path.string(), stream);
     switch ((ObjectType)object_type) {
     case REGULAR_FILE: {
         const FileInfo &info = std::get<FileInfo>(data);
-        stream.write((char *)&info.attribute, sizeof(info.attribute));
+        uint32_t hard_link_ref_count = info.hard_link_paths.size();
+        for(uint32_t i = 0;i < hard_link_ref_count;i++){
+            write_string(info.hard_link_paths[i].string(), stream);
+        }
         stream.write((char *)info.content.start, info.content.size);
         break;
     }
     case SYMLINK: {
         Symlink &link = std::get<Symlink>(data);
-        stream.write((char *)&link.attribute, sizeof(link.attribute));
         stream << link.target;
         break;
     }
     case DIRECTORY: {
-        Directory &dir = std::get<Directory>(data);
-        stream.write((char *)&dir.attribute, sizeof(dir.attribute));
-        uint32_t entry_count = (uint32_t)dir.children_name.size();
-        stream.write((char*)&entry_count, sizeof(entry_count));
-        for(uint32_t i = 0;i < entry_count;i++){
-            stream << dir.children_name[i] << '\n';
-        }
         break;
     }
     default: {
         throw SyncerException("无效Object");
     }
     }
-}
 }
 } // namespace Syncer

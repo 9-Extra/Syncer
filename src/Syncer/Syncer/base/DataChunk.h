@@ -5,7 +5,7 @@
 #include <iostream>
 
 namespace Syncer {
-template <class T> void* fill_struct(T &stu, void* const ptr) {
+template <class T> void* fill_struct(T &stu, const void* ptr) {
     memcpy(&stu, ptr, sizeof(T));
     return (void*)((char*)ptr + sizeof(T));
 }
