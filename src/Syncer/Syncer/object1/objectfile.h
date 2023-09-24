@@ -9,7 +9,6 @@
 #include <string_view>
 #include <variant>
 
-
 namespace Syncer {
 
 namespace fs = std::filesystem;
@@ -22,12 +21,16 @@ public:
 
     ObjectType get_type() const { return (ObjectType)data.index(); }
 
-    FileObject(FileObject&& other){
+    FileObject(FileObject &&other) {
+        standard_path = std::move(other.standard_path);
+        attribute = other.attribute;
         data = std::move(other.data);
         other.data.emplace<std::monostate>();
     }
 
-    FileObject& operator=(FileObject&& other){
+    FileObject &operator=(FileObject &&other) {
+        standard_path = std::move(other.standard_path);
+        attribute = other.attribute;
         data = std::move(other.data);
         other.data.emplace<std::monostate>();
         return *this;
@@ -37,7 +40,8 @@ public:
 
     static FileObject open(const fs::path &path);
 
-    static FileObject build_file(const fs::path& standard_path, const FILE_BASIC_INFO &attribute, const std::vector<fs::path> hard_link_refs, DataChunk&& content) {
+    static FileObject build_file(const fs::path &standard_path, const FILE_BASIC_INFO &attribute,
+                                 const std::vector<fs::path> hard_link_refs, DataChunk &&content) {
         FileObject object;
         object.standard_path = standard_path;
         object.attribute = attribute;
@@ -45,7 +49,8 @@ public:
         return object;
     }
 
-    static FileObject build_symlink(const fs::path& standard_path, const FILE_BASIC_INFO &attribute, const fs::path& target){
+    static FileObject build_symlink(const fs::path &standard_path, const FILE_BASIC_INFO &attribute,
+                                    const fs::path &target) {
         FileObject object;
         object.standard_path = standard_path;
         object.attribute = attribute;
@@ -53,7 +58,7 @@ public:
         return object;
     }
 
-    static FileObject build_empty_directory(const fs::path& standard_path, const FILE_BASIC_INFO &attribute){
+    static FileObject build_empty_directory(const fs::path &standard_path, const FILE_BASIC_INFO &attribute) {
         FileObject object;
         object.standard_path = standard_path;
         object.attribute = attribute;
@@ -61,9 +66,11 @@ public:
         return object;
     }
 
+    const fs::path &get_standard_path() { return standard_path; }
 
     void write(std::ostream &stream);
     std::string sha1();
+    void recover(const fs::path &root);
 
 private:
     struct FileInfo {
@@ -75,8 +82,7 @@ private:
         fs::path target;
     };
 
-    struct Directory {
-    };
+    struct Directory {};
 
     FILE_BASIC_INFO attribute;
     fs::path standard_path;

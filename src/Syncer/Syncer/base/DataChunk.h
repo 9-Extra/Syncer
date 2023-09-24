@@ -19,15 +19,17 @@ struct DataChunk {
         this->size = size;
     }
 
-    DataChunk(const DataChunk& other) : DataChunk(other.size){
-        memcpy(this->start, other.start, this->size);
-        std::cout << "DataChunk Copy!!!" << std::endl;
-    }
+    DataChunk(const DataChunk& other) = delete;
+
+    // DataChunk(const DataChunk& other) : DataChunk(other.size){
+    //     memcpy(this->start, other.start, this->size);
+    //     std::cout << "DataChunk Copy!!!" << std::endl;
+    // }
 
     DataChunk(DataChunk &&other) : start(other.start), size(other.size) {
         other.start = nullptr;
         other.size = 0;
-        std::cout << "DataChunk move" << std::endl;
+        //std::cout << "DataChunk move" << std::endl;
     }
 
     DataChunk &operator=(DataChunk &&other) {

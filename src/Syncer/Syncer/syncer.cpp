@@ -10,7 +10,6 @@ namespace Syncer {
 namespace fs = std::filesystem;
 
 static void do_backup(RepositoryConfig& config){
-
     for(AutoBackupConfig& c : config.autobackup_list){
         c.last_backup_time = SyTimePoint::clock::now();
     }
@@ -88,6 +87,12 @@ std::vector<RepositoryInfo> list_repository(){
     return result;
 }
 
+void immedately_backup_repository(uint32_t id){
+    if (id >= repository_list.resp_list.size()){
+        throw Syncer::SyncerException("目标仓库不存在");
+    }
+    do_backup(repository_list.resp_list[id]);
+}
 void delete_repository(uint32_t id){
     if (id >= repository_list.resp_list.size()){
         throw Syncer::SyncerException("目标仓库不存在");
@@ -100,6 +105,7 @@ void recover_repository(uint32_t id){
     if (id >= repository_list.resp_list.size()){
         throw Syncer::SyncerException("目标仓库不存在");
     }
-    do_backup(repository_list.resp_list[id]);
+    std::cout << "还原仓库到:" << repository_list.resp_list[id].root << std::endl;
+    recover(repository_list.resp_list[id].target_path, repository_list.resp_list[id].root);
 }
 } // namespace Syncer

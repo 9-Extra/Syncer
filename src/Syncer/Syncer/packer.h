@@ -22,5 +22,6 @@ public:
 void copy(const fs::path &root, const fs::path &target, const FileFiliter &filiter);
 
 void store(const fs::path &root, const fs::path &target, const FileFiliter &filiter);
+void recover(const fs::path &storage_path, const fs::path &target);
 
 } // namespace Syncer

@@ -46,6 +46,7 @@ struct RepositoryInfo{
 
 std::vector<RepositoryInfo> list_repository();
 
+void immedately_backup_repository(uint32_t id);
 void delete_repository(uint32_t id);
 
 struct RecoverConfig{

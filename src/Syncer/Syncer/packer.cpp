@@ -64,7 +64,7 @@ static DirectoryFiles load_file_list(const fs::path &root, const FileFiliter &fi
                             file.standard_path.push_back(std::move(standard_path));//记录路径
                             file.content = read_whole_file(handle.handle);//记录内容
 
-                            result.files.push_back(std::move(file));
+                            result.files.emplace_back(std::move(file));
 
                             hard_link_map[info] = result.files.size() - 1;
                         }
@@ -136,7 +136,6 @@ void copy(const fs::path &root, const fs::path &target, const FileFiliter &filit
         } catch (const fs::filesystem_error &e) {
             throw SyncerException(std::format("创建目录 {} 失败: {}", abs_path.string(), e.what()));
         }
-        fs::create_directories(abs_path);
         HandleWrapper handle(CreateFileW(abs_path.wstring().c_str(), GENERIC_WRITE, FILE_SHARE_WRITE, NULL,
                                          OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS,
                                          NULL));
@@ -198,8 +197,7 @@ void store(const fs::path &root, const fs::path &target, const FileFiliter &fili
         throw SyncerException(std::format("删除 {} 失败: {}", target.string(), e.what()));
     }
 
-    std::vector<FileObject> pool;//除了文件夹以外的
-    std::unordered_map<fs::path, FileObject> dir_object_map;
+    std::vector<FileObject> pool;
     for (auto &dir : directory_list) {
         pool.emplace_back(FileObject::build_empty_directory(dir.standard_path, dir.attibute));
     }
@@ -216,8 +214,22 @@ void store(const fs::path &root, const fs::path &target, const FileFiliter &fili
     fs::create_directories(target);
     for(FileObject& o : pool){
         fs::path p = target / o.sha1();
-        std::ofstream file(p);
+        std::ofstream file(p, std::ios_base::binary | std::ios_base::out);
         o.write(file);
     }
 }
+
+void recover(const fs::path &storage_path, const fs::path &target){
+    
+    for(const fs::directory_entry& entry : fs::directory_iterator(storage_path)){
+        try{
+            FileObject o = FileObject::open(storage_path / entry.path());
+            o.recover(target);
+        } catch (const Syncer::SyncerException& e){
+            std::cout << std::format("读取文件{}失败， 跳过\n", (storage_path / entry.path()).string());
+        }
+    }
+}
+
+
 } // namespace Syncer
