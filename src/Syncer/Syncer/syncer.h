@@ -14,18 +14,20 @@ struct AutoBackupDesc{
     unsigned int interval;
 };
 struct RepositoryDesc{
+    std::string name;
     fs::path source_path;
     fs::path target_path;
     FilterDesc filter;
 
+    bool do_encryption;
     std::string password;
 
-    bool packup;
+    bool do_packup;//以打包的形式备份
     bool enable_autobackup;
     AutoBackupDesc auto_backup_config; 
 };
 
-void register_repository(const RepositoryDesc& desc);
+uint32_t register_repository(const RepositoryDesc& desc, bool immedate_backup=true);
 
 struct RepositoryInfo{
     uint32_t id;
