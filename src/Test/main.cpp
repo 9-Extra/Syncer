@@ -12,12 +12,12 @@ int main() {
         desc.target_path = R"(C:\Users\77313\Desktop\111111111\1.pack)";
         desc.do_encryption = false;
         desc.do_packup = true;
-        desc.name = "test";
+        desc.custom_name = "test";
         desc.enable_autobackup = true;
         desc.auto_backup_config.interval = 100;
 
-        //Syncer::register_repository(desc, true);
-        Syncer::recover_repository(0);
+        //std::string uuid = Syncer::register_repository(desc, true);
+        //Syncer::recover_repository(uuid);
 
         for (auto& i : Syncer::list_repository()){
             std::cout << i.last_backup_time << std::endl;

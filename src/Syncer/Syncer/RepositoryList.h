@@ -6,9 +6,20 @@
 namespace Syncer {
 
 struct RepositoryList{
-    std::vector<RepositoryConfig> resp_list;
+    std::unordered_map<std::string, RepositoryConfig> resp_list;
     
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(RepositoryList, resp_list);
+    friend void to_json(nlohmann::json& j, const RepositoryList& t) { 
+        j = nlohmann::json::array();
+        for(const auto& [uuid, c] : t.resp_list){
+            j.emplace_back(c);
+        }
+    }
+    friend void from_json(const nlohmann::json& j, RepositoryList& t) { 
+        for(auto&& it : j){
+            t.resp_list.emplace(it.at("uuid").get<std::string>(), it.get<RepositoryConfig>());
+        }
+    }
+
 };
 
 extern fs::path json_file_path;

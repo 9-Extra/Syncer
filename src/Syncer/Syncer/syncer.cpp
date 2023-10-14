@@ -3,6 +3,7 @@
 #include "RepositoryList.h"
 #include <iostream>
 #include "packer.h"
+#include "base/uuid.h"
 namespace Syncer {
 namespace fs = std::filesystem;
 
@@ -33,9 +34,11 @@ void stop_backup_system(){
 
 }
 
-uint32_t register_repository(const RepositoryDesc& desc, bool immedate_backup){
-    RepositoryConfig& config = repository_list.resp_list.emplace_back();
-    config.name = desc.name;
+std::string register_repository(const RepositoryDesc& desc, bool immedate_backup){
+    const std::string uuid =  generate_guid_string();
+    RepositoryConfig& config = repository_list.resp_list[uuid];
+    config.uuid = uuid;
+    config.custom_name = desc.custom_name;
     config.root = desc.source_path;
     config.target_path = desc.target_path;
     config.do_packup = desc.do_packup;
@@ -57,22 +60,23 @@ uint32_t register_repository(const RepositoryDesc& desc, bool immedate_backup){
         // todo
     }
 
+    save_config_file();// 保存
+
     if (immedate_backup){
         do_backup(config);
     }
 
-    return repository_list.resp_list.size() - 1;
+    return uuid;
 }
 
 std::vector<RepositoryInfo> list_repository(){
     std::vector<RepositoryInfo> result;
-    for(uint32_t i = 0;i < repository_list.resp_list.size();i++){
-        RepositoryConfig& c = repository_list.resp_list[i];
+    for(const auto&[name, c]: repository_list.resp_list){
         RepositoryInfo info{
-            .id = i,
+            .uuid = c.uuid,
             .source_path = c.root,
             .target_path = c.target_path,
-            .filter = FilterDesc(),
+            .filter = c.filter_desc,
 
             .file_number = 0,
             .need_password = c.encryption.method == "none" ? true : false,
@@ -96,30 +100,32 @@ std::vector<RepositoryInfo> list_repository(){
     return result;
 }
 
-void immedately_backup_repository(uint32_t id){
-    if (id >= repository_list.resp_list.size()){
+void immedately_backup_repository(const std::string& uuid){
+    if (auto it = repository_list.resp_list.find(uuid);it != repository_list.resp_list.end()){
+        do_backup(it->second);
+    } else {
         throw Syncer::SyncerException("目标仓库不存在");
     }
-    do_backup(repository_list.resp_list[id]);
 }
-void delete_repository(uint32_t id){
-    if (id >= repository_list.resp_list.size()){
+void delete_repository(const std::string& uuid){
+    if (auto it = repository_list.resp_list.find(uuid);it != repository_list.resp_list.end()){
+        repository_list.resp_list.erase(it);
+    } else {
         throw Syncer::SyncerException("目标仓库不存在");
     }
-    std::swap(repository_list.resp_list[id], repository_list.resp_list.back());
-    repository_list.resp_list.pop_back();
 }
 
-void recover_repository(uint32_t id){
-    if (id >= repository_list.resp_list.size()){
-        throw Syncer::SyncerException("目标仓库不存在");
-    }
-    std::cout << "还原仓库到:" << repository_list.resp_list[id].root << std::endl;
-    auto& resp = repository_list.resp_list[id];
-    if (!resp.do_packup){
-        recover(resp.target_path, resp.root);
+void recover_repository(const std::string &uuid) {
+    if (auto it = repository_list.resp_list.find(uuid); it != repository_list.resp_list.end()) {
+        RepositoryConfig& resp = it->second;
+        std::cout << "还原仓库到:" << resp.root << std::endl;
+        if (!resp.do_packup) {
+            recover(resp.target_path, resp.root);
+        } else {
+            unpack(resp.target_path, resp.root);
+        }
     } else {
-        unpack(resp.target_path, resp.root);
+        throw Syncer::SyncerException("目标仓库不存在");
     }
 }
 } // namespace Syncer

@@ -24,7 +24,8 @@ inline void from_json(const nlohmann::json& j, AutoBackupConfig& p) {
     p.last_backup_time = SyTimePoint(SyTimePoint::duration(time_count));
 }
 struct RepositoryConfig {
-    std::string name;
+    std::string uuid;
+    std::string custom_name;
     fs::path root;
     fs::path target_path;
 
@@ -40,6 +41,6 @@ struct RepositoryConfig {
 
     std::vector<AutoBackupConfig> autobackup_list;
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(RepositoryConfig, name, root, target_path, filter_desc, do_packup, encryption, autobackup_list);
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(RepositoryConfig, uuid, custom_name, root, target_path, filter_desc, do_packup, encryption, autobackup_list);
 };
 } // namespace Syncer
