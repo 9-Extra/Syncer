@@ -9,9 +9,8 @@
 #include <string_view>
 #include <variant>
 
-
 namespace Syncer {
-namespace FileObject {
+
 namespace fs = std::filesystem;
 
 class FileObject final {
@@ -22,12 +21,16 @@ public:
 
     ObjectType get_type() const { return (ObjectType)data.index(); }
 
-    FileObject(FileObject&& other){
+    FileObject(FileObject &&other) {
+        standard_path = std::move(other.standard_path);
+        attribute = other.attribute;
         data = std::move(other.data);
         other.data.emplace<std::monostate>();
     }
 
-    FileObject& operator=(FileObject&& other){
+    FileObject &operator=(FileObject &&other) {
+        standard_path = std::move(other.standard_path);
+        attribute = other.attribute;
         data = std::move(other.data);
         other.data.emplace<std::monostate>();
         return *this;
@@ -35,46 +38,56 @@ public:
 
     ~FileObject() {}
 
+    static FileObject open(const DataSpan &span);
     static FileObject open(const fs::path &path);
 
-    static FileObject build_file(const FILE_BASIC_INFO &attribute, DataChunk&& content) {
+    static FileObject build_file(const fs::path &standard_path, const FILE_BASIC_INFO &attribute,
+                                 const std::vector<fs::path> hard_link_refs, DataChunk &&content) {
         FileObject object;
-        object.data.emplace<FileInfo>(attribute, std::forward<DataChunk>(content));
+        object.standard_path = standard_path;
+        object.attribute = attribute;
+        object.data.emplace<FileInfo>(hard_link_refs, std::forward<DataChunk>(content));
         return object;
     }
 
-    static FileObject build_symlink(const FILE_BASIC_INFO &attribute, const fs::path& target){
+    static FileObject build_symlink(const fs::path &standard_path, const FILE_BASIC_INFO &attribute,
+                                    const fs::path &target) {
         FileObject object;
-        object.data.emplace<Symlink>(attribute, target);
+        object.standard_path = standard_path;
+        object.attribute = attribute;
+        object.data.emplace<Symlink>(target);
         return object;
     }
 
-    static FileObject build_empty_directory(const FILE_BASIC_INFO &attribute){
+    static FileObject build_empty_directory(const fs::path &standard_path, const FILE_BASIC_INFO &attribute) {
         FileObject object;
-        object.data.emplace<Directory>(attribute, std::vector<std::string>{});
+        object.standard_path = standard_path;
+        object.attribute = attribute;
+        object.data.emplace<Directory>();
         return object;
     }
 
+    const fs::path &get_standard_path() { return standard_path; }
 
+    DataChunk serialize();
     void write(std::ostream &stream);
     std::string sha1();
+    void recover(const fs::path &root);
 
 private:
     struct FileInfo {
-        FILE_BASIC_INFO attribute;
+        std::vector<fs::path> hard_link_paths;
         DataChunk content;
     };
 
     struct Symlink {
-        FILE_BASIC_INFO attribute;
         fs::path target;
     };
 
-    struct Directory {
-        FILE_BASIC_INFO attribute;
-        std::vector<std::string> children_name;
-    };
+    struct Directory {};
 
+    FILE_BASIC_INFO attribute;
+    fs::path standard_path;
     std::variant<std::monostate, FileInfo, Symlink, Directory> data;
 
     struct FileHead {
@@ -82,5 +95,5 @@ private:
         int object_type;
     };
 };
-}
+
 } // namespace Syncer

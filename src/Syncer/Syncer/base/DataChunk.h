@@ -56,4 +56,18 @@ struct DataChunk {
 
     bool write_to_file(std::filesystem::path file_path, bool override = false);
 };
+
+struct DataSpan{
+    char *start;
+    uint64_t size;
+
+    static DataSpan from_chunk(DataChunk& chunk){
+        return DataSpan((char*)chunk.start, chunk.size);
+    }
+
+    const static DataSpan from_chunk(const DataChunk& chunk){
+        return DataSpan((char*)chunk.start, chunk.size);
+    }
+
+};
 } // namespace Syncer

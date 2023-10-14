@@ -1,9 +1,6 @@
 #include "syncer.h"
 
-#include <format>
-#include <fstream>
 #include "RepositoryList.h"
-#include "base/winapi.h"
 #include <iostream>
 #include "packer.h"
 namespace Syncer {
@@ -13,7 +10,11 @@ static void do_backup(RepositoryConfig& config){
     for(AutoBackupConfig& c : config.autobackup_list){
         c.last_backup_time = SyTimePoint::clock::now();
     }
-    store(config.root, config.target_path, FileFiliter());
+    if (!config.do_packup){
+        store(config.root, config.target_path, config.filter_desc);
+    } else {
+        pack(config.root, config.target_path, config.filter_desc);
+    }
 }
 
 void init_backup_system(){
@@ -28,7 +29,8 @@ void init_backup_system(){
 }
 
 void stop_backup_system(){
-    save_config_file();
+    
+
 }
 
 uint32_t register_repository(const RepositoryDesc& desc, bool immedate_backup){
@@ -46,6 +48,13 @@ uint32_t register_repository(const RepositoryDesc& desc, bool immedate_backup){
         config.encryption.key = desc.password;
     } else {
         config.encryption.method = "none";
+    }
+
+    // 设置完毕，检查有效性
+    if (!config.do_packup){
+        // todo
+    } else {
+        // todo
     }
 
     if (immedate_backup){
@@ -106,6 +115,11 @@ void recover_repository(uint32_t id){
         throw Syncer::SyncerException("目标仓库不存在");
     }
     std::cout << "还原仓库到:" << repository_list.resp_list[id].root << std::endl;
-    recover(repository_list.resp_list[id].target_path, repository_list.resp_list[id].root);
+    auto& resp = repository_list.resp_list[id];
+    if (!resp.do_packup){
+        recover(resp.target_path, resp.root);
+    } else {
+        unpack(resp.target_path, resp.root);
+    }
 }
 } // namespace Syncer

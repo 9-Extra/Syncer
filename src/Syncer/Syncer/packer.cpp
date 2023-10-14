@@ -1,5 +1,8 @@
 #include "packer.h"
-#include "object1/objectfile.h"
+#include "object/objectfile.h"
+#include "base/winapi.h"
+#include <unordered_map>
+#include "FileFiliter.h"
 namespace Syncer {
 
 FILE_ID_INFO get_file_identity(HANDLE file) {
@@ -33,7 +36,7 @@ struct DirectoryFiles {
     std::vector<SymLinkInfo> symlinks;
     std::vector<DirectoryInfo> directorys;
 };
-static DirectoryFiles load_file_list(const fs::path &root, const FileFiliter &filiter) {
+static DirectoryFiles load_file_list(const fs::path &root, const FileFiliter& filiter) {
     DirectoryFiles result;
     std::unordered_map<FILE_ID_INFO, size_t> hard_link_map; // 硬连接判断(ID -> result.files中的下标)
     // filter所有文件，将通过的插入file_list
@@ -117,7 +120,7 @@ static DirectoryFiles load_file_list(const fs::path &root, const FileFiliter &fi
     return result;
 }
 
-void copy(const fs::path &root, const fs::path &target, const FileFiliter &filiter) {
+void copy(const fs::path &root, const fs::path &target, const std::string &filiter) {
     // uint32_t updated_file_count = 0;
     // uint32_t totol_file_count = 0;
 
@@ -188,8 +191,8 @@ void copy(const fs::path &root, const fs::path &target, const FileFiliter &filit
     }
 }
 
-void store(const fs::path &root, const fs::path &target, const FileFiliter &filiter){
-    auto [file_list, symlink_list, directory_list] = load_file_list(root, filiter);
+void store(const fs::path &root, const fs::path &target, const std::string &filiter){
+    auto [file_list, symlink_list, directory_list] = load_file_list(root, FileFiliter(filiter));
 
     try {
         fs::remove_all(target);
@@ -228,6 +231,62 @@ void recover(const fs::path &storage_path, const fs::path &target){
         } catch (const Syncer::SyncerException& e){
             std::cout << std::format("读取文件{}失败， 跳过\n", (storage_path / entry.path()).string());
         }
+    }
+}
+
+void pack(const fs::path &root, const fs::path &target, const std::string &filiter){
+    auto [file_list, symlink_list, directory_list] = load_file_list(root, FileFiliter(filiter));
+
+    std::ofstream out_file(target, std::ios_base::out | std::ios_base::binary);
+    if (!out_file){
+        throw SyncerException(std::format("创建文件 {} 失败", target.string()));
+    }
+
+    std::vector<DataChunk> pool;
+    for (auto &dir : directory_list) {
+        pool.emplace_back(FileObject::build_empty_directory(dir.standard_path, dir.attibute).serialize());
+    }
+
+    for (auto &link : symlink_list) {
+        pool.emplace_back(FileObject::build_symlink(link.standard_path, link.attibute, link.target_path).serialize());
+    }
+
+    for (auto &info : file_list) {
+        std::vector refs(info.standard_path.begin() + 1, info.standard_path.end());
+        pool.emplace_back(FileObject::build_file(info.standard_path[0], info.attibute, refs, std::move(info.content)).serialize());
+    }
+
+    uint64_t chunk_count = pool.size();
+    out_file.write((char*)&chunk_count, sizeof(chunk_count));
+    for(const DataChunk& c : pool){
+        uint64_t chunk_size = c.size;
+        out_file.write((char*)&chunk_size, sizeof(chunk_size));
+    }
+
+    for(const DataChunk& c : pool){
+        out_file.write((char*)c.start, c.size);
+    }
+}
+
+void unpack(const fs::path &pack_file, const fs::path &target){
+    std::ifstream in_file(pack_file, std::ios_base::in | std::ios_base::binary);
+    if (!in_file){
+        throw SyncerException(std::format("打开文件 {} 失败", pack_file.string()));
+    }
+    
+    std::vector<DataChunk> chunks;
+    uint64_t chunk_count;
+    in_file.read((char*)&chunk_count, sizeof(chunk_count));
+    for(uint64_t i = 0; i < chunk_count;i++){
+        uint64_t chunk_size;
+        in_file.read((char*)&chunk_size, sizeof(chunk_size));
+        chunks.emplace_back(chunk_size);
+    }
+
+    for(DataChunk& c : chunks){
+        in_file.read((char*)c.start, c.size);
+        FileObject o = FileObject::open(DataSpan::from_chunk(c));
+        o.recover(target);
     }
 }
 

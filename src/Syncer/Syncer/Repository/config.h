@@ -28,7 +28,7 @@ struct RepositoryConfig {
     fs::path root;
     fs::path target_path;
 
-    std::vector<std::string> filter_list;
+    std::string filter_desc;
 
     bool do_packup;//以打包的形式备份
     struct EncryptionConfig{
@@ -40,6 +40,6 @@ struct RepositoryConfig {
 
     std::vector<AutoBackupConfig> autobackup_list;
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(RepositoryConfig, name, root, target_path, filter_list, do_packup, encryption, autobackup_list);
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(RepositoryConfig, name, root, target_path, filter_desc, do_packup, encryption, autobackup_list);
 };
 } // namespace Syncer

@@ -9,15 +9,14 @@ int main() {
 
         Syncer::RepositoryDesc desc;
         desc.source_path = R"(C:\Users\77313\Desktop\Sour式鏡音リンVer.2.01)";
-        desc.target_path = R"(C:\Users\77313\Desktop\111111111)";
+        desc.target_path = R"(C:\Users\77313\Desktop\111111111\1.pack)";
         desc.do_encryption = false;
-        desc.do_packup = false;
+        desc.do_packup = true;
         desc.name = "test";
         desc.enable_autobackup = true;
         desc.auto_backup_config.interval = 100;
 
         //Syncer::register_repository(desc, true);
-        Syncer::immedately_backup_repository(0);
         Syncer::recover_repository(0);
 
         for (auto& i : Syncer::list_repository()){
@@ -25,21 +24,6 @@ int main() {
         }
 
         Syncer::stop_backup_system();
-        // Syncer::LocalRepository resp(".", "./strage");
-        // FILE_BASIC_INFO info;
-        // Syncer::DataChunk content(100);
-        // const char str[] = "daowcjdowmacucdiowamj2132321";
-        // memcpy(content.start, str, sizeof(str));
-
-        // Syncer::FileObject file = Syncer::FileObject::build_file(info, std::move(content));
-        // std::ofstream out("./write.txt");
-        // file.write(out);
-        // out.close();
-
-        // Syncer::FileObject read = Syncer::FileObject::open("write.txt");
-
-        // std::cout << read.get_type() << std::endl;
-
 
     } catch (const Syncer::SyncerException &e) {
         std::cerr << "Error: " << e.what() << std::endl;
