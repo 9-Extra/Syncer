@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <filesystem>
 #include "base/DataChunk.h"
-#include "base/SyncerException.h"
+#include <Syncer/SyncerException.h>
 #include "base/HandleWrapper.h"
 
 template <> struct std::hash<FILE_ID_INFO> {

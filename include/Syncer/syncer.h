@@ -1,5 +1,8 @@
+#pragma once
+
 #include <filesystem>
-#include "base/SyncerException.h"
+#include "SyncerException.h"
+
 namespace Syncer {
 
 namespace fs = std::filesystem;

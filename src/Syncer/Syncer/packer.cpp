@@ -217,13 +217,14 @@ void store(const fs::path &root, const fs::path &target, const std::string &fili
     fs::create_directories(target);
     for(FileObject& o : pool){
         fs::path p = target / o.sha1();
-        std::ofstream file(p, std::ios_base::binary | std::ios_base::out);
-        o.write(file);
+        if (!fs::is_regular_file(p)){ // 如果同名文件存在，说明没有变，跳过
+            std::ofstream file(p, std::ios_base::binary | std::ios_base::out);
+            o.write(file);
+        }
     }
 }
 
 void recover(const fs::path &storage_path, const fs::path &target){
-    
     for(const fs::directory_entry& entry : fs::directory_iterator(storage_path)){
         try{
             FileObject o = FileObject::open(storage_path / entry.path());

@@ -2,7 +2,7 @@
 #include "base/winapi.h"
 #include <iostream>
 #include <fstream>
-#include "base/SyncerException.h"
+#include <Syncer/SyncerException.h>
 
 namespace Syncer {
 

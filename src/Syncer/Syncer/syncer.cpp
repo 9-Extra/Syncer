@@ -1,4 +1,4 @@
-#include "syncer.h"
+#include <Syncer/syncer.h>
 
 #include "RepositoryList.h"
 #include <iostream>

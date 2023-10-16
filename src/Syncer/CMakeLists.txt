@@ -11,7 +11,7 @@ endif()
 file(GLOB_RECURSE sources CONFIGURE_DEPENDS *.cpp *.h)
 target_sources(${TARGET_NAME} PUBLIC ${sources})
 
-target_include_directories(${TARGET_NAME} PUBLIC .)
+target_include_directories(${TARGET_NAME} PUBLIC . ${PROJECT_SOURCE_DIR}/include/)
 
 # # 操作系统库，只需要链接
 target_link_libraries(${TARGET_NAME} PUBLIC "Rpcrt4.lib")
