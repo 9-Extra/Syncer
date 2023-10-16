@@ -35,14 +35,26 @@ void stop_backup_system(){
 }
 
 std::string register_repository(const RepositoryDesc& desc, bool immedate_backup){
-    const std::string uuid =  generate_guid_string();
-    RepositoryConfig& config = repository_list.resp_list[uuid];
-    config.uuid = uuid;
+    RepositoryConfig* ptr_config;
+    if (desc.uuid.empty()){
+        const std::string uuid = generate_guid_string();
+        ptr_config = &repository_list.resp_list[uuid];
+        ptr_config->uuid = uuid;
+    } else {
+        if (auto it = repository_list.resp_list.find(desc.uuid);it != repository_list.resp_list.end()){
+            ptr_config = &it->second;
+        } else {
+            throw SyncerException("指定仓库不存在");
+        }
+    }
+    
+    RepositoryConfig& config = *ptr_config;
     config.custom_name = desc.custom_name;
     config.root = desc.source_path;
     config.target_path = desc.target_path;
     config.do_packup = desc.do_packup;
     if (desc.enable_autobackup){
+        config.autobackup_list.clear();
         config.autobackup_list.emplace_back(desc.auto_backup_config.interval, SyTimePoint::min());
     }
 
@@ -66,7 +78,7 @@ std::string register_repository(const RepositoryDesc& desc, bool immedate_backup
         do_backup(config);
     }
 
-    return uuid;
+    return config.uuid;
 }
 
 std::vector<RepositoryInfo> list_repository(){

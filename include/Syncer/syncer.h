@@ -14,6 +14,7 @@ struct AutoBackupDesc{
     unsigned int interval;
 };
 struct RepositoryDesc{
+    std::string uuid; // 如果要新建则留空("")，修改现有的则填对应的
     std::string custom_name; // 用户自定义名字，可以留空
     fs::path source_path; // 要备份的文件夹路径
     fs::path target_path; // 存储的路径，必须是一个文件夹路径（不存在会自动创建），而对于打包必须是一个文件路径
@@ -27,10 +28,12 @@ struct RepositoryDesc{
     AutoBackupDesc auto_backup_config; 
 };
 
+// 注册或者修改一个仓库，immedate_backup表示是否立即进行一次备份
 std::string register_repository(const RepositoryDesc& desc, bool immedate_backup=true);
 
 struct RepositoryInfo{
     std::string uuid;
+    std::string custom_name;
     fs::path source_path;
     fs::path target_path;
     std::string filter;

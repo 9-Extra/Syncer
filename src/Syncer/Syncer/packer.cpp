@@ -237,7 +237,7 @@ void recover(const fs::path &storage_path, const fs::path &target){
 
 void pack(const fs::path &root, const fs::path &target, const std::string &filiter){
     auto [file_list, symlink_list, directory_list] = load_file_list(root, FileFiliter(filiter));
-
+    fs::create_directories(target.parent_path());
     std::ofstream out_file(target, std::ios_base::out | std::ios_base::binary);
     if (!out_file){
         throw SyncerException(std::format("创建文件 {} 失败", target.string()));
@@ -263,7 +263,6 @@ void pack(const fs::path &root, const fs::path &target, const std::string &filit
         uint64_t chunk_size = c.size;
         out_file.write((char*)&chunk_size, sizeof(chunk_size));
     }
-
     for(const DataChunk& c : pool){
         out_file.write((char*)c.start, c.size);
     }
