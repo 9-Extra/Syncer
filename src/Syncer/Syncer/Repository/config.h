@@ -39,8 +39,9 @@ struct RepositoryConfig {
         NLOHMANN_DEFINE_TYPE_INTRUSIVE(EncryptionConfig, method, key);
     } encryption;
 
-    std::vector<AutoBackupConfig> autobackup_list;
+    bool do_autobackup;
+    AutoBackupConfig autobackup_config;
 
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(RepositoryConfig, uuid, custom_name, root, target_path, filter_desc, do_packup, encryption, autobackup_list);
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(RepositoryConfig, uuid, custom_name, root, target_path, filter_desc, do_packup, encryption, do_autobackup, autobackup_config);
 };
 } // namespace Syncer

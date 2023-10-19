@@ -11,6 +11,6 @@ namespace Syncer {
         struct tm tm;
         localtime_s(&tm, &t);
         
-        return std::format("{}年{}月{}日 {}:{}:{}", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+        return std::format("{}年{}月{}日 {}:{:02}:{:02}", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
     }
 }
