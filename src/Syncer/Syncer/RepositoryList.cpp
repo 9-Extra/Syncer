@@ -1,9 +1,9 @@
 #include "RepositoryList.h"
-#include "base/winapi.h"
-#include <iostream>
-#include <fstream>
-#include <Syncer/SyncerException.h>
 #include "base/uuid.h"
+#include "base/winapi.h"
+#include <Syncer/SyncerException.h>
+#include <fstream>
+#include <iostream>
 
 namespace Syncer {
 
@@ -22,7 +22,10 @@ void RepositoryList::load_config_file() {
     }
     try {
         nlohmann::json json = nlohmann::json::parse(config_file);
-        json.get_to(*this);
+        {
+            std::unique_lock lock(repo_lock);
+            json.get_to(*this);
+        }
     } catch (const nlohmann::json::exception &e) {
         throw SyncerException(std::format("Json 文件格式错误: {}", e.what()));
     }
@@ -32,10 +35,14 @@ void RepositoryList::save_config_file() {
     if (!config_file) {
         throw Syncer::SyncerException(std::format("创建仓库文件文件: {} 失败", json_file_path.string()));
     }
-    config_file << nlohmann::json(*this).dump();
+    {
+        std::unique_lock lock(repo_lock);
+        config_file << nlohmann::json(*this).dump();
+    }
 }
 void RepositoryList::register_repository(const RepositoryDesc *desc, char *uuid) {
     bool is_new;
+    std::unique_lock lock(repo_lock);
     RepositoryConfig *ptr_config;
     if (desc->uuid == nullptr || desc->uuid[0] == '\0') {
         is_new = true;
@@ -51,7 +58,7 @@ void RepositoryList::register_repository(const RepositoryDesc *desc, char *uuid)
         }
     }
     auto factory = EncryptFactory::find_encryptor(desc->encrypt_method);
-    if (factory == nullptr){
+    if (factory == nullptr) {
         throw SyncerException(std::format("不支持加密算法 \"{}\"", desc->encrypt_method));
     }
     // 检查有效性
@@ -63,9 +70,9 @@ void RepositoryList::register_repository(const RepositoryDesc *desc, char *uuid)
     config.target_path = desc->target_path;
     config.do_packup = desc->do_packup;
     config.do_autobackup = desc->enable_autobackup;
-    if (config.do_autobackup){
+    if (config.do_autobackup) {
         config.autobackup_config.interval = desc->auto_backup_config.interval;
-        if (is_new){
+        if (is_new) {
             config.autobackup_config.last_backup_time = SyTimePoint::min();
         }
     }
@@ -83,26 +90,29 @@ void RepositoryList::register_repository(const RepositoryDesc *desc, char *uuid)
     uuid[config.uuid.size()] = '\0';
 }
 void RepositoryList::recover_repository(const char *uuid, const std::string &password) {
-    if (auto it = resp_list.find(uuid); it != resp_list.end()) {
-        RepositoryConfig &resp = it->second;
-        std::cout << "还原仓库到:" << resp.root << std::endl;
+    {
+        std::unique_lock lock(repo_lock);
+        if (auto it = resp_list.find(uuid); it != resp_list.end()) {
+            RepositoryConfig &resp = it->second;
+            std::cout << "还原仓库到:" << resp.root << std::endl;
 
-        EncryptFactory *factory = EncryptFactory::find_encryptor(resp.encryption.method);
-        if (factory == nullptr) {
-            throw SyncerException(std::format("不支持加密算法 \"{}\"", resp.encryption.method));
-        }
-        if (resp.encryption.key_hash != factory->generate_public_key(password)){
-            throw SyncerException(std::format("密码不正确"));
-        }
+            EncryptFactory *factory = EncryptFactory::find_encryptor(resp.encryption.method);
+            if (factory == nullptr) {
+                throw SyncerException(std::format("不支持加密算法 \"{}\"", resp.encryption.method));
+            }
+            if (resp.encryption.key_hash != factory->generate_public_key(password)) {
+                throw SyncerException(std::format("密码不正确"));
+            }
 
-        if (!resp.do_packup) {
-            auto decoder = factory->build_decoder(password);
-            recover(resp.target_path, resp.root, decoder.get());
+            if (!resp.do_packup) {
+                auto decoder = factory->build_decoder(password);
+                recover(resp.target_path, resp.root, decoder.get());
+            } else {
+                unpack(resp.target_path, resp.root);
+            }
         } else {
-            unpack(resp.target_path, resp.root);
+            throw SyncerException("目标仓库不存在");
         }
-    } else {
-        throw SyncerException("目标仓库不存在");
     }
 }
 void RepositoryList::do_backup(RepositoryConfig &config) {

@@ -67,10 +67,6 @@ bool register_repository(const RepositoryDesc *desc, char* uuid) {
     return true;
 }
 
-size_t get_repository_count(){
-    return repository_list.resp_list.size();
-}
-
 struct LISTHANDLE{
     struct Info{
         std::string uuid;
@@ -93,7 +89,9 @@ struct LISTHANDLE{
 bool list_repository_info(LISTHANDLE** handle){
     std::vector<LISTHANDLE::Info> result;
     try {
-        for (const auto &[name, c] : repository_list.resp_list) {
+        auto list = repository_list.get_resp_list();
+        std::unique_lock lock(repository_list.repo_lock, std::adopt_lock_t());
+        for (const auto &[name, c] : list) {
             LISTHANDLE::Info &info = result.emplace_back();
 
             info.uuid = c.uuid;

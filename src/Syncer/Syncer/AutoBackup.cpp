@@ -10,7 +10,9 @@ void AutoBackupManager::backup_loop_func() {
         SyTimePoint next_wakeup_point = SyTimePoint::max();
         try {
             std::cout << "Backup Thread Loop" << std::endl;
-            for (auto &[uuid, rep] : repository_list.resp_list) {
+            auto repos = repository_list.get_resp_list();
+            std::unique_lock lock(repository_list.repo_lock, std::adopt_lock_t());
+            for (auto &[uuid, rep] : repos) {
                 if (rep.do_autobackup) {
                     SyTimePoint next_backup_time =
                         rep.autobackup_config.last_backup_time + std::chrono::seconds(rep.autobackup_config.interval);

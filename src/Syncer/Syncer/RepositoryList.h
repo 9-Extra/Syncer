@@ -3,14 +3,21 @@
 #include "Repository/config.h"
 #include "packer.h"
 #include <Syncer/syncer.h>
+#include <mutex>
 
 namespace Syncer {
 
 struct RepositoryList {
-    std::unordered_map<std::string, RepositoryConfig> resp_list;
+    std::recursive_mutex repo_lock; // 仓库访问锁
 
     void load_config_file();
     void save_config_file();
+
+    // 记得解锁
+    std::unordered_map<std::string, RepositoryConfig>& get_resp_list(){
+        repo_lock.lock();
+        return resp_list;
+    }
 
     friend void to_json(nlohmann::json &j, const RepositoryList &t) {
         j = nlohmann::json::array();
@@ -43,6 +50,8 @@ struct RepositoryList {
             throw SyncerException("目标仓库不存在");
         }
     }
+private:
+    std::unordered_map<std::string, RepositoryConfig> resp_list;
 };
 
 extern fs::path json_file_path;

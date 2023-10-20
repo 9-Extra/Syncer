@@ -54,8 +54,6 @@ struct RepositoryInfo {
     AutoBackupDesc auto_backup_config;
 };
 
-size_t get_repository_count(); // 当前获取仓库数，注意它和用仓库句柄获取的仓库数不一定一致
-
 struct LISTHANDLE;
 // 获取仓库列表，以一个句柄的方式返回，使用此句柄迭代和访问列表（注意这相当于一个快照，如果仓库列表列表发生更新，需要重新获取句柄才能获取更新后的仓库信息）
 bool list_repository_info(LISTHANDLE** handle);
