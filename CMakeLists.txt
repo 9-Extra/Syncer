@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.26)
 
+set(VCPKG_TARGET_TRIPLET "x64-windows-static-md")
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 set(CMAKE_TOOLCHAIN_FILE "D:/programming/vcpkg/scripts/buildsystems/vcpkg.cmake")
 
 if(DEFINED ENV{VCPKG_DEFAULT_TRIPLET} AND NOT DEFINED VCPKG_TARGET_TRIPLET)
