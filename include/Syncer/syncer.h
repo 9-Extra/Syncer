@@ -20,7 +20,6 @@ struct AutoBackupDesc {
     unsigned int interval;
 };
 struct RepositoryDesc {
-    char const *uuid;           // 如果要新建则留空("")，修改现有的则填对应的
     bool immedate_backup; // 是否立即进行一次备份
     char const *custom_name; // 用户自定义名字，可以留空
     char const *source_path; // 要备份的文件夹路径
@@ -35,7 +34,8 @@ struct RepositoryDesc {
     AutoBackupDesc auto_backup_config;
 };
 
-// 注册或者修改一个仓库，返回值表示是否出现错误，仓库的uuid返回值！会写到uuid中，字符串长度（包含结尾）40字节
+// 注册一个仓库，返回值表示是否出现错误，仓库的uuid返回值会写到uuid中，uuid字符串长度需要（包含结尾）40字节
+// 如果要“修改”一个仓库的配置，就获取现有的那个仓库的信息，然后删掉新建！
 bool register_repository(const RepositoryDesc *desc, char* uuid);
 
 struct RepositoryInfo {
@@ -57,16 +57,19 @@ struct RepositoryInfo {
 struct LISTHANDLE;
 // 获取仓库列表，以一个句柄的方式返回，使用此句柄迭代和访问列表（注意这相当于一个快照，如果仓库列表列表发生更新，需要重新获取句柄才能获取更新后的仓库信息）
 bool list_repository_info(LISTHANDLE** handle);
+// 获取一个指定仓库的信息，返回的方法和上一个函数一样，只是列表里只有1个数据（uuid不存在则列表无效且返回false）
+bool list_repository_info_uuid(LISTHANDLE** handle, const char* uuid);
 // 获取列表中项目数
 size_t get_repository_list_size(LISTHANDLE* handle); 
 // 获取当前指向的仓库信息，index为下标，如果大于等于项目数则info内容无效，不要修改info中的内容
 void get_repository_info(LISTHANDLE *handle, size_t index, RepositoryInfo *info) ;
-// 关闭句柄以释放内存
+// 关闭句柄以释放内存，只有获取句柄的函数返回true时才需要执行此函数
 void close_list_handle(LISTHANDLE* handle);
-
-bool immedately_backup_repository(const char *uuid);
+// 删除一个仓库，注意删除仓库时是不会进行恢复操作的，并且会删除备份数据
 bool delete_repository(const char *uuid);
 
+// 立即对一个仓库进行备份操作
+bool immedately_backup_repository(const char *uuid);
 // 从备份恢复，对于无密码的仓库可以无视password
 bool recover_repository(const char *uuid, const char* password);
 }

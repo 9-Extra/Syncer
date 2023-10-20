@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.26)
 
-set(CMAKE_TOOLCHAIN_FILE D:/programming/vcpkg/scripts/buildsystems/vcpkg.cmake)
+set(CMAKE_TOOLCHAIN_FILE "D:/programming/vcpkg/scripts/buildsystems/vcpkg.cmake")
+
+if(DEFINED ENV{VCPKG_DEFAULT_TRIPLET} AND NOT DEFINED VCPKG_TARGET_TRIPLET)
+    set(VCPKG_TARGET_TRIPLET "$ENV{VCPKG_DEFAULT_TRIPLET}" CACHE STRING "")
+endif()
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_C_STANDARD 17)

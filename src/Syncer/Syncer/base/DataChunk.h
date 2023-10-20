@@ -34,7 +34,6 @@ struct DataChunk {
     DataChunk(DataChunk &&other) : start(other.start), size(other.size) {
         other.start = nullptr;
         other.size = 0;
-        //std::cout << "DataChunk move" << std::endl;
     }
 
     DataChunk &operator=(DataChunk &&other) {

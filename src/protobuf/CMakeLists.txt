@@ -8,7 +8,6 @@ target_link_libraries(${TARGET_NAME} PUBLIC protobuf::libprotobuf)
 set(PROTO_BINARY_DIR "${CMAKE_CURRENT_LIST_DIR}/.gen/proto")
 
 target_include_directories(${TARGET_NAME} PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/.gen>")
-
 protobuf_generate(
     TARGET ${TARGET_NAME}
     IMPORT_DIRS "${CMAKE_CURRENT_LIST_DIR}/proto"

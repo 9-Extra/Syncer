@@ -1,4 +1,5 @@
 #include "packer.h"
+#include "Syncer/base/log.h"
 #include "object/objectfile.h"
 #include "base/winapi.h"
 #include <unordered_map>
@@ -174,7 +175,6 @@ void copy(const fs::path &root, const fs::path &target, const std::string &filit
     for (const auto &info : file_list) {
         const DataChunk& file_content = info.content;
         const fs::path &p = info.standard_path[0];
-        std::cout << "Writing file " << p << std::endl;
         // 创建第一个文件
         fs::path first_file_path = target / p;
         write_whole_file_and_arrtibute(first_file_path, info.attibute, file_content);
@@ -232,7 +232,7 @@ void recover(const fs::path &storage_path, const fs::path &target, EncryptFactor
             FileObject o = FileObject::open(DataSpan::from_chunk(decoded));
             o.recover(target);
         } catch (const Syncer::SyncerException& e){
-            std::cout << std::format("读取文件{}失败， 跳过。原因: {}\n", (storage_path / entry.path()).string(), e.what());
+            LOG_ERROR("读取文件{}失败， 跳过。原因: {}", (storage_path / entry.path()).string(), e.what());
         }
     }
 }

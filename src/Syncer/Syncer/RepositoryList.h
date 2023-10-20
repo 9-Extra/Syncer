@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Repository/config.h"
+#include "Syncer/base/log.h"
 #include "packer.h"
 #include <Syncer/syncer.h>
 #include <mutex>
@@ -35,6 +36,7 @@ struct RepositoryList {
 
     void register_repository(const RepositoryDesc *desc, char *uuid);
     void immedately_backup_repository(const char *uuid) {
+        std::unique_lock lock(repo_lock);
         if (auto it = resp_list.find(uuid); it != resp_list.end()) {
             do_backup(it->second);
         } else {
@@ -44,7 +46,10 @@ struct RepositoryList {
     void recover_repository(const char *uuid, const std::string &password);
 
     void delete_repository(const char *uuid) {
+        std::unique_lock lock(repo_lock);
         if (auto it = resp_list.find(uuid); it != resp_list.end()) {
+            LOG_INFO("删除仓库: {}", it->second.uuid);
+            fs::remove_all(it->second.target_path);
             resp_list.erase(it);
         } else {
             throw SyncerException("目标仓库不存在");
