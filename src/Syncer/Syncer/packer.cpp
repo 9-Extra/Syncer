@@ -237,13 +237,9 @@ void recover(const fs::path &storage_path, const fs::path &target, EncryptFactor
     }
 }
 
-void pack(const fs::path &root, const fs::path &target, const std::string &filiter){
+void pack(const fs::path &root, const fs::path &target, const std::string &filiter, EncryptFactory::Encoder* encoder){
     auto [file_list, symlink_list, directory_list] = load_file_list(root, FileFiliter(filiter));
     fs::create_directories(target.parent_path());
-    std::ofstream out_file(target, std::ios_base::out | std::ios_base::binary);
-    if (!out_file){
-        throw SyncerException(std::format("创建文件 {} 失败", target.string()));
-    }
 
     std::vector<DataChunk> pool;
     for (auto &dir : directory_list) {
@@ -260,33 +256,48 @@ void pack(const fs::path &root, const fs::path &target, const std::string &filit
     }
 
     uint64_t chunk_count = pool.size();
-    out_file.write((char*)&chunk_count, sizeof(chunk_count));
+    uint64_t pre_sum_size = 0;
+    pre_sum_size += sizeof(chunk_count);
+    pre_sum_size += sizeof(uint64_t) * pool.size();
+    for(const DataChunk& c : pool){
+        pre_sum_size += c.size;
+    }
+    DataChunk raw(pre_sum_size);
+    char* ptr = (char*)raw.start;
+    *(uint64_t*)ptr = chunk_count;
+    ptr += sizeof(chunk_count);
     for(const DataChunk& c : pool){
         uint64_t chunk_size = c.size;
-        out_file.write((char*)&chunk_size, sizeof(chunk_size));
+        *(uint64_t*)ptr = chunk_size;
+        ptr += sizeof(chunk_count);
     }
     for(const DataChunk& c : pool){
-        out_file.write((char*)c.start, c.size);
+        memcpy(ptr, c.start, c.size);
+        ptr += c.size;
     }
+    assert((char*)raw.start + raw.size == ptr);
+
+    DataChunk encoded = encoder->encode(raw);
+    encoded.write_to_file(target);
 }
 
-void unpack(const fs::path &pack_file, const fs::path &target){
-    std::ifstream in_file(pack_file, std::ios_base::in | std::ios_base::binary);
-    if (!in_file){
-        throw SyncerException(std::format("打开文件 {} 失败", pack_file.string()));
-    }
-    
+void unpack(const fs::path &pack_file, const fs::path &target, EncryptFactory::Decoder* decoder){
+    DataChunk encrypted = read_whole_file(open_file_read(pack_file).handle);
+    DataChunk raw = decoder->decode(encrypted);
+
     std::vector<DataChunk> chunks;
     uint64_t chunk_count;
-    in_file.read((char*)&chunk_count, sizeof(chunk_count));
+    const void* ptr = raw.start;
+    ptr = fill_struct(chunk_count, ptr);
     for(uint64_t i = 0; i < chunk_count;i++){
         uint64_t chunk_size;
-        in_file.read((char*)&chunk_size, sizeof(chunk_size));
+        ptr = fill_struct(chunk_size, ptr);
         chunks.emplace_back(chunk_size);
     }
 
     for(DataChunk& c : chunks){
-        in_file.read((char*)c.start, c.size);
+        memcpy(c.start, ptr, c.size);
+        ptr = (char*)ptr + c.size;
         FileObject o = FileObject::open(DataSpan::from_chunk(c));
         o.recover(target);
     }

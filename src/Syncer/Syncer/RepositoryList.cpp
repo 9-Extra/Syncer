@@ -91,11 +91,11 @@ void RepositoryList::recover_repository(const char *uuid, const std::string &pas
                 throw SyncerException(std::format("密码不正确"));
             }
 
+            auto decoder = factory->build_decoder(password);
             if (!resp.do_packup) {
-                auto decoder = factory->build_decoder(password);
                 recover(resp.target_path, resp.root, decoder.get());
             } else {
-                unpack(resp.target_path, resp.root);
+                unpack(resp.target_path, resp.root, decoder.get());
             }
         } else {
             throw SyncerException("目标仓库不存在");
@@ -109,11 +109,11 @@ void RepositoryList::do_backup(RepositoryConfig &config) {
     if (factory == nullptr) {
         throw SyncerException(std::format("不支持加密算法 {}", config.encryption.method));
     }
+    auto encoder = factory->build_encoder(config.encryption.key_hash);
     if (!config.do_packup) {
-        auto encoder = factory->build_encoder(config.encryption.key_hash);
         store(config.root, config.target_path, config.filter_desc, encoder.get());
     } else {
-        pack(config.root, config.target_path, config.filter_desc);
+        pack(config.root, config.target_path, config.filter_desc,encoder.get());
     }
     if (config.do_autobackup) {
         config.autobackup_config.last_backup_time = SyTimePoint::clock::now();

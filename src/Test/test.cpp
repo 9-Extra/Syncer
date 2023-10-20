@@ -45,7 +45,7 @@ int main() {
         desc.target_path = R"(C:\Users\77313\Desktop\111111111\1.pack)";
         desc.encrypt_method = "ks256";
         desc.password = "123456";
-        desc.do_packup = false;
+        desc.do_packup = true;
         desc.custom_name = "test";
         desc.enable_autobackup = false;
         desc.auto_backup_config.interval = 5;
