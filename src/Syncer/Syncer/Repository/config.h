@@ -34,9 +34,9 @@ struct RepositoryConfig {
     bool do_packup;//以打包的形式备份
     struct EncryptionConfig{
         std::string method;
-        std::string key;
+        std::string key_hash;
 
-        NLOHMANN_DEFINE_TYPE_INTRUSIVE(EncryptionConfig, method, key);
+        NLOHMANN_DEFINE_TYPE_INTRUSIVE(EncryptionConfig, method, key_hash);
     } encryption;
 
     bool do_autobackup;

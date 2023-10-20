@@ -3,10 +3,7 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
-#include <chrono>
-#include <iostream>
 #include <assert.h>
-#include "RepositoryList.h"
 #include "packer.h"
 
 namespace Syncer {

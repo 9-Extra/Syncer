@@ -16,6 +16,7 @@ extern "C" {
 bool init_backup_system() {
     try {
         init_json_file_path();
+        EncryptFactory::init_encryptor_table();
         if (fs::exists(json_file_path)) {
             std::cout << "读取仓库文件" << std::endl;
             repository_list.load_config_file();
@@ -106,13 +107,13 @@ bool list_repository_info(LISTHANDLE** handle){
 
             info.packup = c.do_packup;
             info.enable_autobackup = c.do_autobackup;
+            if (c.autobackup_config.last_backup_time == SyTimePoint::min()) {
+                info.last_backup_time = "从未备份";
+            } else {
+                info.last_backup_time = to_loacltime(c.autobackup_config.last_backup_time);
+            }
 
             if (info.enable_autobackup) {
-                if (c.autobackup_config.last_backup_time == SyTimePoint::min()) {
-                    info.last_backup_time = "从未备份";
-                } else {
-                    info.last_backup_time = to_loacltime(c.autobackup_config.last_backup_time);
-                }
                 info.auto_backup_config.interval = c.autobackup_config.interval;
             }
         }
@@ -177,9 +178,9 @@ bool delete_repository(const char *uuid) {
     return true;
 }
 
-bool recover_repository(const char *uuid) {
+bool recover_repository(const char *uuid, const char* password) {
     try {
-        repository_list.recover_repository(uuid);
+        repository_list.recover_repository(uuid, password == nullptr ? "" : password);
     } catch (const std::exception &e) {
         error_reason = e.what();
         return false;

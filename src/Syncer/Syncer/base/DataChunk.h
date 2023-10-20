@@ -1,8 +1,7 @@
 #pragma once
 
 #include <filesystem>
-#include <vector>
-#include <iostream>
+#include "sha1.hpp"
 
 namespace Syncer {
 template <class T> void* fill_struct(T &stu, const void* ptr) {
@@ -20,6 +19,12 @@ struct DataChunk {
     }
 
     DataChunk(const DataChunk& other) = delete;
+
+    DataChunk clone() const{
+        DataChunk d(size);
+        memcpy(d.start, this->start, this->size);
+        return d;
+    }
 
     // DataChunk(const DataChunk& other) : DataChunk(other.size){
     //     memcpy(this->start, other.start, this->size);
@@ -42,7 +47,13 @@ struct DataChunk {
         return *this;
     }
 
-    template <class T> static DataChunk store(T *data) {
+    SHAResult sha1() const{
+        SHA1 sha;
+        sha.update((char*)start, size);
+        return sha.final();
+    }
+
+    template <class T> static DataChunk store(T *data){
         DataChunk chunk(sizeof(T));
         memcpy(chunk.start, (void *)data, sizeof(T));
         return chunk;
@@ -54,7 +65,7 @@ struct DataChunk {
         }
     }
 
-    bool write_to_file(std::filesystem::path file_path, bool override = false);
+    void write_to_file(std::filesystem::path file_path, bool override = true);
 };
 
 struct DataSpan{
@@ -67,6 +78,11 @@ struct DataSpan{
 
     const static DataSpan from_chunk(const DataChunk& chunk){
         return DataSpan((char*)chunk.start, chunk.size);
+    }
+    SHAResult sha1(){
+        SHA1 sha;
+        sha.update(start, size);
+        return sha.final();
     }
 
 };

@@ -29,16 +29,31 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <string_view>
 
+struct SHAResult{
+    uint32_t digest[5];
 
+    std::string to_string(){
+        /* Hex std::string */
+        std::ostringstream result;
+        for (size_t i = 0; i < sizeof(digest) / sizeof(digest[0]); i++)
+        {
+            result << std::hex << std::setfill('0') << std::setw(8);
+            result << digest[i];
+        }
+        return result.str();
+    }
+};
 class SHA1
 {
 public:
     SHA1();
+    void update(const char* start, size_t size);
     void update(const std::string &s);
     void update(std::istream &is);
-    std::string final();
-    static std::string from_file(const std::string &filename);
+    SHAResult final();
+    static SHAResult from_file(const std::string &filename);
 
 private:
     uint32_t digest[5];
@@ -253,6 +268,25 @@ inline void SHA1::update(const std::string &s)
     update(is);
 }
 
+inline void SHA1::update(const char* start, size_t size)
+{
+    const char* end = start + size;
+    const char* current = start;
+    while (true)
+    {
+        size_t read_count = std::min<size_t>(BLOCK_BYTES - buffer.size(), end - current);
+        current += read_count;
+        buffer.append(current, read_count);
+        if (buffer.size() != BLOCK_BYTES)
+        {
+            return;
+        }
+        uint32_t block[BLOCK_INTS];
+        buffer_to_block(buffer, block);
+        transform(digest, block, transforms);
+        buffer.clear();
+    }
+}
 
 inline void SHA1::update(std::istream &is)
 {
@@ -277,7 +311,7 @@ inline void SHA1::update(std::istream &is)
  * Add padding and return the message digest.
  */
 
-inline std::string SHA1::final()
+inline SHAResult SHA1::final()
 {
     /* Total number of hashed bits */
     uint64_t total_bits = (transforms*BLOCK_BYTES + buffer.size()) * 8;
@@ -307,22 +341,17 @@ inline std::string SHA1::final()
     block[BLOCK_INTS - 2] = (uint32_t)(total_bits >> 32);
     transform(digest, block, transforms);
 
-    /* Hex std::string */
-    std::ostringstream result;
-    for (size_t i = 0; i < sizeof(digest) / sizeof(digest[0]); i++)
-    {
-        result << std::hex << std::setfill('0') << std::setw(8);
-        result << digest[i];
-    }
+    SHAResult r;
+    memcpy(r.digest, digest, 20);
 
     /* Reset for next run */
     reset(digest, buffer, transforms);
 
-    return result.str();
+    return r;
 }
 
 
-inline std::string SHA1::from_file(const std::string &filename)
+inline SHAResult SHA1::from_file(const std::string &filename)
 {
     std::ifstream stream(filename.c_str(), std::ios::binary);
     SHA1 checksum;

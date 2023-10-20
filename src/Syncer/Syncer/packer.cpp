@@ -191,7 +191,8 @@ void copy(const fs::path &root, const fs::path &target, const std::string &filit
     }
 }
 
-void store(const fs::path &root, const fs::path &target, const std::string &filiter){
+void store(const fs::path &root, const fs::path &target, const std::string &filiter, EncryptFactory::Encoder* encoder){
+    assert(encoder);
     auto [file_list, symlink_list, directory_list] = load_file_list(root, FileFiliter(filiter));
 
     try {
@@ -217,20 +218,21 @@ void store(const fs::path &root, const fs::path &target, const std::string &fili
     fs::create_directories(target);
     for(FileObject& o : pool){
         fs::path p = target / o.sha1();
-        if (!fs::is_regular_file(p)){ // 如果同名文件存在，说明没有变，跳过
-            std::ofstream file(p, std::ios_base::binary | std::ios_base::out);
-            o.write(file);
-        }
+
+        DataChunk encrypted = encoder->encode(o.serialize());
+        encrypted.write_to_file(p);
     }
 }
 
-void recover(const fs::path &storage_path, const fs::path &target){
+void recover(const fs::path &storage_path, const fs::path &target, EncryptFactory::Decoder* decoder){
     for(const fs::directory_entry& entry : fs::directory_iterator(storage_path)){
         try{
-            FileObject o = FileObject::open(storage_path / entry.path());
+            DataChunk encrypted = read_whole_file(open_file_read(storage_path / entry.path()).handle);
+            DataChunk decoded = decoder->decode(encrypted);
+            FileObject o = FileObject::open(DataSpan::from_chunk(decoded));
             o.recover(target);
         } catch (const Syncer::SyncerException& e){
-            std::cout << std::format("读取文件{}失败， 跳过\n", (storage_path / entry.path()).string());
+            std::cout << std::format("读取文件{}失败， 跳过。原因: {}\n", (storage_path / entry.path()).string(), e.what());
         }
     }
 }

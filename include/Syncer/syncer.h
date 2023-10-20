@@ -27,8 +27,8 @@ struct RepositoryDesc {
     char const *target_path; // 存储的路径，必须是一个文件夹路径（不存在会自动创建），而对于打包必须是一个文件路径
     char const *filter;         // 过滤器，未实现
 
-    bool do_encryption; // 是否加密
-    char *password;     // 密码
+    char const *encrypt_method; // 加密算法，可选none（无加密），ks256（凯撒加密）
+    char const *password;     // 密码，无加密则填空字符串""
 
     bool do_packup; // 以打包的形式备份
     bool enable_autobackup;
@@ -69,9 +69,7 @@ void close_list_handle(LISTHANDLE* handle);
 bool immedately_backup_repository(const char *uuid);
 bool delete_repository(const char *uuid);
 
-struct RecoverConfig {
-    char *password;
-};
-bool recover_repository(const char *uuid);
+// 从备份恢复，对于无密码的仓库可以无视password
+bool recover_repository(const char *uuid, const char* password);
 }
 } // namespace Syncer

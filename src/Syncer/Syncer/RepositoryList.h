@@ -3,7 +3,6 @@
 #include "Repository/config.h"
 #include "packer.h"
 #include <Syncer/syncer.h>
-#include <vector>
 
 namespace Syncer {
 
@@ -25,45 +24,23 @@ struct RepositoryList {
         }
     }
 
-    static void do_backup(RepositoryConfig &config) {
-        std::cout << "正在备份：" << config.custom_name << std::endl; 
-        if (!config.do_packup) {
-            store(config.root, config.target_path, config.filter_desc);
-        } else {
-            pack(config.root, config.target_path, config.filter_desc);
-        }
-        if (config.do_autobackup){
-            config.autobackup_config.last_backup_time = SyTimePoint::clock::now();
-        }
-    }
+    static void do_backup(RepositoryConfig &config);
 
     void register_repository(const RepositoryDesc *desc, char *uuid);
     void immedately_backup_repository(const char *uuid) {
         if (auto it = resp_list.find(uuid); it != resp_list.end()) {
             do_backup(it->second);
         } else {
-            throw Syncer::SyncerException("目标仓库不存在");
+            throw SyncerException("目标仓库不存在");
         }
     }
-    void recover_repository(const char *uuid) {
-        if (auto it = resp_list.find(uuid); it != resp_list.end()) {
-            RepositoryConfig &resp = it->second;
-            std::cout << "还原仓库到:" << resp.root << std::endl;
-            if (!resp.do_packup) {
-                recover(resp.target_path, resp.root);
-            } else {
-                unpack(resp.target_path, resp.root);
-            }
-        } else {
-            throw Syncer::SyncerException("目标仓库不存在");
-        }
-    }
+    void recover_repository(const char *uuid, const std::string &password);
 
     void delete_repository(const char *uuid) {
         if (auto it = resp_list.find(uuid); it != resp_list.end()) {
             resp_list.erase(it);
         } else {
-            throw Syncer::SyncerException("目标仓库不存在");
+            throw SyncerException("目标仓库不存在");
         }
     }
 };

@@ -65,7 +65,7 @@ FileObject FileObject::open(const fs::path &path) {
 std::string FileObject::sha1() {
     SHA1 sha1;
     sha1.update(standard_path.string());
-    return sha1.final();
+    return sha1.final().to_string();
 }
 
 void FileObject::write(std::ostream &stream) {

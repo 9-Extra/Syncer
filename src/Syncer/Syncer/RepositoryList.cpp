@@ -50,6 +50,12 @@ void RepositoryList::register_repository(const RepositoryDesc *desc, char *uuid)
             throw SyncerException("指定仓库不存在");
         }
     }
+    auto factory = EncryptFactory::find_encryptor(desc->encrypt_method);
+    if (factory == nullptr){
+        throw SyncerException(std::format("不支持加密算法 \"{}\"", desc->encrypt_method));
+    }
+    // 检查有效性
+    // todo
 
     RepositoryConfig &config = *ptr_config;
     config.custom_name = desc->custom_name;
@@ -64,19 +70,8 @@ void RepositoryList::register_repository(const RepositoryDesc *desc, char *uuid)
         }
     }
 
-    if (desc->do_encryption) {
-        config.encryption.method = "ks";
-        config.encryption.key = desc->password;
-    } else {
-        config.encryption.method = "none";
-    }
-
-    // 设置完毕，检查有效性
-    if (!config.do_packup) {
-        // todo
-    } else {
-        // todo
-    }
+    config.encryption.method = desc->encrypt_method;
+    config.encryption.key_hash = factory->generate_public_key(desc->password);
 
     save_config_file(); // 保存
 
@@ -86,5 +81,45 @@ void RepositoryList::register_repository(const RepositoryDesc *desc, char *uuid)
 
     config.uuid.copy(uuid, config.uuid.size());
     uuid[config.uuid.size()] = '\0';
+}
+void RepositoryList::recover_repository(const char *uuid, const std::string &password) {
+    if (auto it = resp_list.find(uuid); it != resp_list.end()) {
+        RepositoryConfig &resp = it->second;
+        std::cout << "还原仓库到:" << resp.root << std::endl;
+
+        EncryptFactory *factory = EncryptFactory::find_encryptor(resp.encryption.method);
+        if (factory == nullptr) {
+            throw SyncerException(std::format("不支持加密算法 \"{}\"", resp.encryption.method));
+        }
+        if (resp.encryption.key_hash != factory->generate_public_key(password)){
+            throw SyncerException(std::format("密码不正确"));
+        }
+
+        if (!resp.do_packup) {
+            auto decoder = factory->build_decoder(password);
+            recover(resp.target_path, resp.root, decoder.get());
+        } else {
+            unpack(resp.target_path, resp.root);
+        }
+    } else {
+        throw SyncerException("目标仓库不存在");
+    }
+}
+void RepositoryList::do_backup(RepositoryConfig &config) {
+    std::cout << "正在备份：" << config.custom_name << std::endl;
+
+    EncryptFactory *factory = EncryptFactory::find_encryptor(config.encryption.method);
+    if (factory == nullptr) {
+        throw SyncerException(std::format("不支持加密算法 {}", config.encryption.method));
+    }
+    if (!config.do_packup) {
+        auto encoder = factory->build_encoder(config.encryption.key_hash);
+        store(config.root, config.target_path, config.filter_desc, encoder.get());
+    } else {
+        pack(config.root, config.target_path, config.filter_desc);
+    }
+    if (config.do_autobackup) {
+        config.autobackup_config.last_backup_time = SyTimePoint::clock::now();
+    }
 }
 } // namespace Syncer
