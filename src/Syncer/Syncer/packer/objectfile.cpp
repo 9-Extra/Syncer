@@ -1,6 +1,9 @@
 #include "objectfile.h"
 #include "../base/sha1.hpp"
-#include "Syncer/base/log.h"
+#include "../base/SyncerException.h"
+#include "../base/log.h"
+#include "../base/file.h"
+#include "../base/HandleWrapper.h"
 
 namespace Syncer {
 

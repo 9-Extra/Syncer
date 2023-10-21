@@ -1,8 +1,8 @@
 #include "RepositoryList.h"
-#include "base/log.h"
-#include "base/uuid.h"
-#include "base/winapi.h"
-#include <Syncer/SyncerException.h>
+#include "../base/log.h"
+#include "../base/uuid.h"
+#include "../base/winapi.h"
+#include "../base/SyncerException.h"
 #include <fstream>
 
 namespace Syncer {

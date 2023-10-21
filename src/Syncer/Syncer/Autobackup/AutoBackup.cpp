@@ -1,7 +1,7 @@
 #include "AutoBackup.h"
 
-#include "RepositoryList.h"
-#include "Syncer/base/log.h"
+#include "../Repository/RepositoryList.h"
+#include "../base/log.h"
 
 namespace Syncer {
 AutoBackupManager autobackup_manager;
@@ -22,11 +22,11 @@ void AutoBackupManager::backup_loop_func() {
                         LOG_DEBUG("执行自动备份: {}", rep.uuid);
                         try {
                             repository_list.do_backup(rep);
-                        } catch (const std::exception &e){
+                        } catch (const std::exception &e) {
                             LOG_WARN("自动备份{}时出现异常，自动备份仍将继续运行", rep.uuid, e.what());
                         }
                         next_backup_time = rep.autobackup_config.last_backup_time +
-                                                std::chrono::seconds(rep.autobackup_config.interval);
+                                           std::chrono::seconds(rep.autobackup_config.interval);
                     }
                     next_wakeup_point = std::min(next_wakeup_point, next_backup_time);
                 }

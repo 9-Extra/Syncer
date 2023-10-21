@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Repository/config.h"
-#include "Syncer/base/log.h"
-#include "packer.h"
+#include "config.h"
+#include "../base/log.h"
+#include "../packer/packer.h"
 #include <Syncer/syncer.h>
 #include <mutex>
 

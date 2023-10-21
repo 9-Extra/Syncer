@@ -1,6 +1,6 @@
 #include "DataChunk.h"
 #include "winapi.h"
-#include "../SyncerException.h"
+#include "SyncerException.h"
 #include <format>
 namespace Syncer {
 void DataChunk::write_to_file(std::filesystem::path file_path, bool override) {

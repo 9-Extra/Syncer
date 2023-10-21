@@ -1,4 +1,5 @@
-#include "encryption/encryptor.h"
+#pragma once
+#include "../encryption/encryptor.h"
 
 namespace Syncer {
 

@@ -1,11 +1,10 @@
 #pragma once
 
-#include <Windows.h>
 #include <cstdint>
 #include <filesystem>
-#include "base/DataChunk.h"
-#include <Syncer/SyncerException.h>
-#include "base/HandleWrapper.h"
+#include "DataChunk.h"
+#include "SyncerException.h"
+#include "HandleWrapper.h"
 
 template <> struct std::hash<FILE_ID_INFO> {
     size_t operator()(FILE_ID_INFO info) const {

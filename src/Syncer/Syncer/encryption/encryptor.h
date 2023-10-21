@@ -3,7 +3,7 @@
 #include <string>
 #include <memory>
 #include "../base/DataChunk.h"
-#include "../SyncerException.h"
+#include "../base/SyncerException.h"
 
 namespace Syncer {
 

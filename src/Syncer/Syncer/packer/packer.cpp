@@ -1,10 +1,16 @@
 #include "packer.h"
-#include "Syncer/base/log.h"
-#include "object/objectfile.h"
-#include "base/winapi.h"
-#include <unordered_map>
+
 #include "FileFiliter.h"
-#include "base/md5.h"
+#include "objectfile.h"
+
+#include "../base/HandleWrapper.h"
+#include "../base/SyncerException.h"
+#include "../base/md5.h"
+#include "../base/file.h"
+#include "../base/log.h"
+
+
+#include <unordered_map>
 namespace Syncer {
 
 FILE_ID_INFO get_file_identity(HANDLE file) {
@@ -38,7 +44,7 @@ struct DirectoryFiles {
     std::vector<SymLinkInfo> symlinks;
     std::vector<DirectoryInfo> directorys;
 };
-static DirectoryFiles load_file_list(const fs::path &root, const FileFiliter& filiter) {
+static DirectoryFiles load_file_list(const fs::path &root, const FileFiliter &filiter) {
     DirectoryFiles result;
     std::unordered_map<FILE_ID_INFO, size_t> hard_link_map; // 硬连接判断(ID -> result.files中的下标)
     // filter所有文件，将通过的插入file_list
@@ -66,8 +72,8 @@ static DirectoryFiles load_file_list(const fs::path &root, const FileFiliter& fi
                         }
                         // 对属性进行过滤
                         if (filiter.filiter_attribute(standard_path, file.attibute)) {
-                            file.standard_path.push_back(std::move(standard_path));//记录路径
-                            file.content = read_whole_file(handle.handle);//记录内容
+                            file.standard_path.push_back(std::move(standard_path)); // 记录路径
+                            file.content = read_whole_file(handle.handle);          // 记录内容
 
                             result.files.emplace_back(std::move(file));
 
@@ -174,7 +180,7 @@ void copy(const fs::path &root, const fs::path &target, const std::string &filit
     }
 
     for (const auto &info : file_list) {
-        const DataChunk& file_content = info.content;
+        const DataChunk &file_content = info.content;
         const fs::path &p = info.standard_path[0];
         // 创建第一个文件
         fs::path first_file_path = target / p;
@@ -192,7 +198,7 @@ void copy(const fs::path &root, const fs::path &target, const std::string &filit
     }
 }
 
-void store(const fs::path &root, const fs::path &target, const std::string &filiter, EncryptFactory::Encoder* encoder){
+void store(const fs::path &root, const fs::path &target, const std::string &filiter, EncryptFactory::Encoder *encoder) {
     assert(encoder);
     auto [file_list, symlink_list, directory_list] = load_file_list(root, FileFiliter(filiter));
 
@@ -217,7 +223,7 @@ void store(const fs::path &root, const fs::path &target, const std::string &fili
     }
 
     fs::create_directories(target);
-    for(FileObject& o : pool){
+    for (FileObject &o : pool) {
         fs::path p = target / o.sha1();
 
         DataChunk encrypted = encoder->encode(o.serialize());
@@ -225,20 +231,20 @@ void store(const fs::path &root, const fs::path &target, const std::string &fili
     }
 }
 
-void recover(const fs::path &storage_path, const fs::path &target, EncryptFactory::Decoder* decoder){
-    for(const fs::directory_entry& entry : fs::directory_iterator(storage_path)){
-        try{
+void recover(const fs::path &storage_path, const fs::path &target, EncryptFactory::Decoder *decoder) {
+    for (const fs::directory_entry &entry : fs::directory_iterator(storage_path)) {
+        try {
             DataChunk encrypted = read_whole_file(open_file_read(storage_path / entry.path()).handle);
             DataChunk decoded = decoder->decode(encrypted);
             FileObject o = FileObject::open(DataSpan::from_chunk(decoded));
             o.recover(target);
-        } catch (const Syncer::SyncerException& e){
+        } catch (const Syncer::SyncerException &e) {
             LOG_ERROR("读取文件{}失败， 跳过。原因: {}", (storage_path / entry.path()).string(), e.what());
         }
     }
 }
 
-void pack(const fs::path &root, const fs::path &target, const std::string &filiter, EncryptFactory::Encoder* encoder){
+void pack(const fs::path &root, const fs::path &target, const std::string &filiter, EncryptFactory::Encoder *encoder) {
     auto [file_list, symlink_list, directory_list] = load_file_list(root, FileFiliter(filiter));
     fs::create_directories(target.parent_path());
 
@@ -253,7 +259,8 @@ void pack(const fs::path &root, const fs::path &target, const std::string &filit
 
     for (auto &info : file_list) {
         std::vector refs(info.standard_path.begin() + 1, info.standard_path.end());
-        pool.emplace_back(FileObject::build_file(info.standard_path[0], info.attibute, refs, std::move(info.content)).serialize());
+        pool.emplace_back(
+            FileObject::build_file(info.standard_path[0], info.attibute, refs, std::move(info.content)).serialize());
     }
 
     // 先计算大小
@@ -261,7 +268,7 @@ void pack(const fs::path &root, const fs::path &target, const std::string &filit
     uint64_t pre_sum_size = 4; // 校验头
     pre_sum_size += sizeof(chunk_count);
     pre_sum_size += sizeof(uint64_t) * pool.size();
-    for(const DataChunk& c : pool){
+    for (const DataChunk &c : pool) {
         pre_sum_size += c.size;
     }
     pre_sum_size += 16; // 加上md5码
@@ -283,7 +290,7 @@ void pack(const fs::path &root, const fs::path &target, const std::string &filit
         // 末尾加上md5
         std::string md5 = md5::digest(raw.start, raw.size - 16);
         writer.write_buf(md5.data(), 16);
-        
+
         assert(writer.ptr == writer.end);
     }
 
@@ -291,43 +298,40 @@ void pack(const fs::path &root, const fs::path &target, const std::string &filit
     encoded.write_to_file(target);
 }
 
-void unpack(const fs::path &pack_file, const fs::path &target, EncryptFactory::Decoder* decoder){
+void unpack(const fs::path &pack_file, const fs::path &target, EncryptFactory::Decoder *decoder) {
     DataChunk encrypted = read_whole_file(open_file_read(pack_file).handle);
     DataChunk raw = decoder->decode(encrypted);
 
-    if (std::string_view((char*)raw.start, 4) != "pack"){
-        throw SyncerException("校验出错，文件发生损坏，或者并非有效的打包文件");
+    if (std::string_view((char *)raw.start, 4) != "pack") {
+        throw SyncerException("校验出错，并非有效的打包文件，或者文件发生损坏");
     }
 
     std::string md5 = md5::digest(raw.start, raw.size - 16);
-    std::string md5_from_file(((char*)raw.start + raw.size - 16), (char*)raw.start + raw.size);
-    if (md5 != md5_from_file){
+    std::string md5_from_file(((char *)raw.start + raw.size - 16), (char *)raw.start + raw.size);
+    if (md5 != md5_from_file) {
         throw SyncerException("校验出错，文件发生损坏");
     }
 
     std::vector<DataChunk> chunks;
-    const void* ptr = (char*)raw.start + 4;
+    const void *ptr = (char *)raw.start + 4;
     uint64_t chunk_count;
     ptr = fill_struct(chunk_count, ptr);
-    for(uint64_t i = 0; i < chunk_count;i++){
+    for (uint64_t i = 0; i < chunk_count; i++) {
         uint64_t chunk_size;
         ptr = fill_struct(chunk_size, ptr);
         chunks.emplace_back(chunk_size);
     }
 
-
-
     try {
-        for(DataChunk& c : chunks){
-        memcpy(c.start, ptr, c.size);
-        ptr = (char*)ptr + c.size;
-        FileObject o = FileObject::open(DataSpan::from_chunk(c));
-        o.recover(target);
-    }
-    } catch( const SyncerException& e){
+        for (DataChunk &c : chunks) {
+            memcpy(c.start, ptr, c.size);
+            ptr = (char *)ptr + c.size;
+            FileObject o = FileObject::open(DataSpan::from_chunk(c));
+            o.recover(target);
+        }
+    } catch (const SyncerException &e) {
         throw SyncerException("解包文件时出错，可能是bug");
     }
 }
-
 
 } // namespace Syncer

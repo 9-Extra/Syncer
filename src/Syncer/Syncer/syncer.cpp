@@ -1,8 +1,8 @@
 #include <Syncer/syncer.h>
 
-#include "AutoBackup.h"
-#include "RepositoryList.h"
-#include "packer.h"
+#include "Autobackup/AutoBackup.h"
+#include "Repository/RepositoryList.h"
+#include "packer/packer.h"
 #include "base/log.h"
 
 
