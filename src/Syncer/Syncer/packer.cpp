@@ -4,6 +4,7 @@
 #include "base/winapi.h"
 #include <unordered_map>
 #include "FileFiliter.h"
+#include "base/md5.h"
 namespace Syncer {
 
 FILE_ID_INFO get_file_identity(HANDLE file) {
@@ -255,27 +256,36 @@ void pack(const fs::path &root, const fs::path &target, const std::string &filit
         pool.emplace_back(FileObject::build_file(info.standard_path[0], info.attibute, refs, std::move(info.content)).serialize());
     }
 
+    // 先计算大小
     uint64_t chunk_count = pool.size();
-    uint64_t pre_sum_size = 0;
+    uint64_t pre_sum_size = 4; // 校验头
     pre_sum_size += sizeof(chunk_count);
     pre_sum_size += sizeof(uint64_t) * pool.size();
     for(const DataChunk& c : pool){
         pre_sum_size += c.size;
     }
+    pre_sum_size += 16; // 加上md5码
+
+    // 写入
     DataChunk raw(pre_sum_size);
-    char* ptr = (char*)raw.start;
-    *(uint64_t*)ptr = chunk_count;
-    ptr += sizeof(chunk_count);
-    for(const DataChunk& c : pool){
-        uint64_t chunk_size = c.size;
-        *(uint64_t*)ptr = chunk_size;
-        ptr += sizeof(chunk_count);
+    {
+        DataChunkWriter writer(raw);
+        writer.write_buf("pack", 4); // 校验头
+        writer.write(chunk_count);
+        for (const DataChunk &c : pool) {
+            uint64_t chunk_size = c.size;
+            writer.write(chunk_size);
+        }
+        for (const DataChunk &c : pool) {
+            writer.write_buf(c.start, c.size);
+        }
+
+        // 末尾加上md5
+        std::string md5 = md5::digest(raw.start, raw.size - 16);
+        writer.write_buf(md5.data(), 16);
+        
+        assert(writer.ptr == writer.end);
     }
-    for(const DataChunk& c : pool){
-        memcpy(ptr, c.start, c.size);
-        ptr += c.size;
-    }
-    assert((char*)raw.start + raw.size == ptr);
 
     DataChunk encoded = encoder->encode(raw);
     encoded.write_to_file(target);
@@ -285,9 +295,19 @@ void unpack(const fs::path &pack_file, const fs::path &target, EncryptFactory::D
     DataChunk encrypted = read_whole_file(open_file_read(pack_file).handle);
     DataChunk raw = decoder->decode(encrypted);
 
+    if (std::string_view((char*)raw.start, 4) != "pack"){
+        throw SyncerException("校验出错，文件发生损坏，或者并非有效的打包文件");
+    }
+
+    std::string md5 = md5::digest(raw.start, raw.size - 16);
+    std::string md5_from_file(((char*)raw.start + raw.size - 16), (char*)raw.start + raw.size);
+    if (md5 != md5_from_file){
+        throw SyncerException("校验出错，文件发生损坏");
+    }
+
     std::vector<DataChunk> chunks;
+    const void* ptr = (char*)raw.start + 4;
     uint64_t chunk_count;
-    const void* ptr = raw.start;
     ptr = fill_struct(chunk_count, ptr);
     for(uint64_t i = 0; i < chunk_count;i++){
         uint64_t chunk_size;
@@ -295,11 +315,17 @@ void unpack(const fs::path &pack_file, const fs::path &target, EncryptFactory::D
         chunks.emplace_back(chunk_size);
     }
 
-    for(DataChunk& c : chunks){
+
+
+    try {
+        for(DataChunk& c : chunks){
         memcpy(c.start, ptr, c.size);
         ptr = (char*)ptr + c.size;
         FileObject o = FileObject::open(DataSpan::from_chunk(c));
         o.recover(target);
+    }
+    } catch( const SyncerException& e){
+        throw SyncerException("解包文件时出错，可能是bug");
     }
 }
 

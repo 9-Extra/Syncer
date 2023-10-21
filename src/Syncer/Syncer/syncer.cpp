@@ -239,7 +239,7 @@ bool delete_repository(const char *uuid) {
     return true;
 }
 
-bool recover_repository(const char *uuid, const char *password) {
+bool recover_repository(const char *uuid, const char *password){
     try {
         repository_list.recover_repository(uuid, password == nullptr ? "" : password);
     } catch (const std::exception &e) {

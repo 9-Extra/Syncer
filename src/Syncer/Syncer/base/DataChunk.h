@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include "sha1.hpp"
+#include <assert.h>
 
 namespace Syncer {
 template <class T> void* fill_struct(T &stu, const void* ptr) {
@@ -85,4 +86,31 @@ struct DataSpan{
     }
 
 };
+
+struct DataChunkWriter{
+    char* ptr;
+    char* end;
+
+    DataChunkWriter(DataChunk& chunk){
+        ptr = (char*)chunk.start;
+        end = ptr + chunk.size;
+    }
+
+    DataChunkWriter(DataSpan& chunk){
+        ptr = (char*)chunk.start;
+        end = ptr + chunk.size;
+    }
+
+    void write_buf(const void* buf, size_t size){
+        assert(ptr + size <= end);
+        memcpy(ptr, buf, size);
+        ptr += size;
+    }
+
+    template<class T>
+    void write(const T& item){
+        write_buf(&item, sizeof(T));
+    }
+};
+
 } // namespace Syncer

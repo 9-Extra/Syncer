@@ -1,5 +1,6 @@
 #include "objectfile.h"
 #include "../base/sha1.hpp"
+#include "Syncer/base/log.h"
 
 namespace Syncer {
 
@@ -118,12 +119,13 @@ void FileObject::recover(const fs::path &root) {
     case REGULAR_FILE: {
         const FileInfo &info = std::get<FileInfo>(data);
         write_whole_file_and_arrtibute(file_path, attribute, info.content);
-
+        LOG_TRACE("还原文件\"{}\"", file_path.string());
         // 如果存在硬连接，其它硬连接链接到此文件
         for (size_t i = 1; i < info.hard_link_paths.size(); i++) {
             fs::path p = root / info.hard_link_paths[i];
             try {
                 fs::create_hard_link(p, file_path);
+                LOG_TRACE("还原文件（硬连接）\"{}\"", file_path.string());
             } catch (const fs::filesystem_error &e) {
                 throw SyncerException(std::format("创建硬连接 {} 失败: {}", p.string(), e.what()));
             }
@@ -144,7 +146,7 @@ void FileObject::recover(const fs::path &root) {
                                             sizeof(FILE_BASIC_INFO))) {
                 throw SyncerException(std::format("设置符号连接 {} 属性失败: {}", file_path.string(), GetLastError()));
             }
-
+            LOG_TRACE("还原符号链接\"{}\" -> \"{}\"", file_path.string(), link.target.string());
         } catch (const fs::filesystem_error &e) {
             throw SyncerException(std::format("创建符号连接 {} 失败: {}", file_path.string(), e.what()));
         }
@@ -166,6 +168,7 @@ void FileObject::recover(const fs::path &root) {
         if (!SetFileInformationByHandle(handle.handle, FileBasicInfo, (void *)&attribute, sizeof(FILE_BASIC_INFO))) {
             throw SyncerException(std::format("设置文件夹 {} 属性失败: {}", file_path.string(), GetLastError()));
         }
+        LOG_TRACE("设置目录属性\"{}\"", file_path.string());
         break;
     }
     default:{

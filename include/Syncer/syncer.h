@@ -20,7 +20,6 @@ struct AutoBackupDesc {
     unsigned int interval;
 };
 struct RepositoryDesc {
-    bool immedate_backup; // 是否立即进行一次备份
     char const *custom_name; // 用户自定义名字，可以留空
     char const *source_path; // 要备份的文件夹路径
     char const *target_path; // 存储的路径，必须是一个文件夹路径（不存在会自动创建），而对于打包必须是一个文件路径
@@ -36,6 +35,7 @@ struct RepositoryDesc {
 
 // 注册一个仓库，返回值表示是否出现错误，仓库的uuid返回值会写到uuid中，uuid字符串长度需要（包含结尾）40字节
 // 如果要“修改”一个仓库的配置，就获取现有的那个仓库的信息，然后删掉新建！
+// 注册过程中会立即进行一次备份
 bool register_repository(const RepositoryDesc *desc, char* uuid);
 
 struct RepositoryInfo {

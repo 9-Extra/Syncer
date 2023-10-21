@@ -1,9 +1,9 @@
 #include "RepositoryList.h"
+#include "base/log.h"
 #include "base/uuid.h"
 #include "base/winapi.h"
 #include <Syncer/SyncerException.h>
 #include <fstream>
-#include "base/log.h"
 
 namespace Syncer {
 
@@ -56,20 +56,16 @@ void RepositoryList::register_repository(const RepositoryDesc *desc, char *uuid)
     config.target_path = desc->target_path;
     config.do_packup = desc->do_packup;
     config.do_autobackup = desc->enable_autobackup;
-    config.autobackup_config.last_backup_time = SyTimePoint::min();
+    //config.autobackup_config.last_backup_time = SyTimePoint::min();
     if (config.do_autobackup) {
         config.autobackup_config.interval = desc->auto_backup_config.interval;
     }
 
     config.encryption.method = desc->encrypt_method;
     config.encryption.key_hash = factory->generate_public_key(desc->password);
-    
 
+    do_backup(config); // 立即进行一次备份
     save_config_file(); // 保存
-
-    if (desc->immedate_backup) {
-        do_backup(config);
-    }
 
     LOG_INFO("创建仓库{}完成", config.custom_name);
 
@@ -105,18 +101,27 @@ void RepositoryList::recover_repository(const char *uuid, const std::string &pas
 void RepositoryList::do_backup(RepositoryConfig &config) {
     LOG_INFO("正在备份仓库：{}", config.custom_name);
 
-    EncryptFactory *factory = EncryptFactory::find_encryptor(config.encryption.method);
-    if (factory == nullptr) {
-        throw SyncerException(std::format("不支持加密算法 {}", config.encryption.method));
-    }
-    auto encoder = factory->build_encoder(config.encryption.key_hash);
-    if (!config.do_packup) {
-        store(config.root, config.target_path, config.filter_desc, encoder.get());
-    } else {
-        pack(config.root, config.target_path, config.filter_desc,encoder.get());
-    }
-    if (config.do_autobackup) {
-        config.autobackup_config.last_backup_time = SyTimePoint::clock::now();
-    }
+    try {
+        EncryptFactory *factory = EncryptFactory::find_encryptor(config.encryption.method);
+        if (factory == nullptr) {
+            throw SyncerException(std::format("不支持加密算法 {}", config.encryption.method));
+        }
+        auto encoder = factory->build_encoder(config.encryption.key_hash);
+        if (!config.do_packup) {
+            store(config.root, config.target_path, config.filter_desc, encoder.get());
+        } else {
+            pack(config.root, config.target_path, config.filter_desc, encoder.get());
+        }
+
+        if (config.do_autobackup) {
+            config.autobackup_config.last_backup_time = SyTimePoint::clock::now();
+        }
+    } catch (const SyncerException &e) {
+        // 即使出现错误也要设置完成备份的时间
+        if (config.do_autobackup) {
+            config.autobackup_config.last_backup_time = SyTimePoint::clock::now();
+        }
+        throw e; // 原样抛出
+    } 
 }
 } // namespace Syncer

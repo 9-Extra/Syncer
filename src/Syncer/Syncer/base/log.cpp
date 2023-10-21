@@ -20,7 +20,7 @@ Logger::~Logger() {
 
 void Logger::inititalize() {
 
-    auto file_detail_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("log_detail.txt");
+    auto file_detail_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("log_detail.txt", true);
     file_detail_sink->set_level(spdlog::level::level_enum::trace);
     file_detail_sink->set_pattern("%^[%T][%n][%l] %v%$");
 

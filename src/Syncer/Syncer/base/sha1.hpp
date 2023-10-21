@@ -29,7 +29,6 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <string_view>
 
 struct SHAResult{
     uint32_t digest[5];
