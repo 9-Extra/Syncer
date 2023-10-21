@@ -1,9 +1,8 @@
 #pragma once
 
+#include "../base/winapi.h"
 #include <filesystem>
 #include <string>
-#include "../base/winapi.h"
-
 
 namespace Syncer {
 

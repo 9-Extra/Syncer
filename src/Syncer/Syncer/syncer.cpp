@@ -2,7 +2,6 @@
 
 #include "Autobackup/AutoBackup.h"
 #include "Repository/RepositoryList.h"
-#include "packer/packer.h"
 #include "base/log.h"
 
 

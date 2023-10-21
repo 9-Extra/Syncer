@@ -1,6 +1,6 @@
 #pragma once
-#include <Syncer/base/DataChunk.h>
-#include <Syncer/base/winapi.h>
+#include "../base/DataChunk.h"
+#include "../base/winapi.h"
 #include <filesystem>
 #include <string>
 #include <variant>

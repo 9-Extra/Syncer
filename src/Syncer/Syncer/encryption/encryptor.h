@@ -1,10 +1,9 @@
 #pragma once
 
-#include <string>
-#include <memory>
 #include "../base/DataChunk.h"
 #include "../base/SyncerException.h"
-
+#include <string>
+#include <memory>
 namespace Syncer {
 
 class SyEncrytionException : public SyncerException
