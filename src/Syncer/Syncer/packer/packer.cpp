@@ -5,10 +5,9 @@
 
 #include "../base/HandleWrapper.h"
 #include "../base/SyncerException.h"
-#include "../base/md5.h"
 #include "../base/file.h"
 #include "../base/log.h"
-
+#include "../base/md5.h"
 
 #include <unordered_map>
 namespace Syncer {

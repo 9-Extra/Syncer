@@ -4,7 +4,7 @@
 
 namespace Syncer {
 
-class 凯撒加密 final : public EncryptFactory {
+class Ks256 final : public EncryptFactory {
 public:
     using EncryptFactory::EncryptFactory;
     virtual std::string generate_public_key(const std::string &private_key) override { return private_key; }

@@ -22,11 +22,11 @@ void Logger::inititalize() {
 
     auto file_detail_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("log_detail.txt", true);
     file_detail_sink->set_level(spdlog::level::level_enum::trace);
-    file_detail_sink->set_pattern("%^[%T][%n][%l] %v%$");
+    file_detail_sink->set_pattern("%^[%T][%l] %v%$");
 
     auto file_warn_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("log_warn.txt");
     file_warn_sink->set_level(spdlog::level::level_enum::warn);
-    file_warn_sink->set_pattern("%^[%T][%n][%l] %v%$");
+    file_warn_sink->set_pattern("%^[%T][%l] %v%$");
 
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
 #ifdef NDEBUG
@@ -34,7 +34,7 @@ void Logger::inititalize() {
 #else
     console_sink->set_level(spdlog::level::level_enum::trace);
 #endif
-    console_sink->set_pattern("%^[%T][%n][%l] %v%$");
+    console_sink->set_pattern("%^[%T][%l] %v%$");
 
     spdlog::init_thread_pool(10000, 1);
 

@@ -2,7 +2,7 @@
 
 namespace Syncer {
 
-class 无加密 final : public EncryptFactory {
+class NoEncryption final : public EncryptFactory {
 public:
     using EncryptFactory::EncryptFactory;
     virtual std::string generate_public_key(const std::string &) override { return ""; }

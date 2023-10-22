@@ -4,6 +4,10 @@
 #include "Repository/RepositoryList.h"
 #include "base/log.h"
 
+#ifndef __PRETTY_FUNCTION__
+#define __PRETTY_FUNCTION__ __FUNCTION__
+#endif // !__PRETTY_FUNCTION__
+
 
 namespace Syncer {
 namespace fs = std::filesystem;
@@ -12,7 +16,7 @@ static std::string error_reason = "";
 
 extern "C" {
 
-bool init_backup_system() {
+bool init_backup_system() noexcept {
     try {
         logger.inititalize();
         init_json_file_path();
@@ -28,13 +32,13 @@ bool init_backup_system() {
 
     } catch (const std::exception &e) {
         error_reason = e.what();
-        LOG_ERROR("{}抛出异常: {}", __PRETTY_FUNCTION__ ,e.what());
+        LOG_ERROR("{}抛出异常: {}", __PRETTY_FUNCTION__, e.what());
         return false;
     }
     return true;
 }
 
-bool stop_backup_system() {
+bool stop_backup_system() noexcept {
     autobackup_manager.stop();
     repository_list.get_resp_list().clear();
     repository_list.repo_lock.unlock();
@@ -42,7 +46,7 @@ bool stop_backup_system() {
     return true;
 }
 
-bool get_error_reason(char *reason, size_t buffer_size) {
+bool get_error_reason(char *reason, size_t buffer_size) noexcept {
     if (buffer_size > error_reason.size()) {
         error_reason.copy(reason, error_reason.size());
         reason[error_reason.size()] = '\0';
@@ -59,13 +63,13 @@ bool get_error_reason(char *reason, size_t buffer_size) {
     }
 }
 
-bool register_repository(const RepositoryDesc *desc, char *uuid) {
+bool register_repository(const RepositoryDesc *desc, char *uuid) noexcept {
     try {
         repository_list.register_repository(desc, uuid);
         autobackup_manager.wakeup_backupthread();
     } catch (const std::exception &e) {
         error_reason = e.what();
-        LOG_ERROR("{}抛出异常: {}", __PRETTY_FUNCTION__ ,e.what());
+        LOG_ERROR("{}抛出异常: {}", __PRETTY_FUNCTION__, e.what());
         return false;
     }
 
@@ -91,7 +95,7 @@ struct LISTHANDLE {
 
     std::vector<Info> info;
 };
-bool list_repository_info(LISTHANDLE **handle) {
+bool list_repository_info(LISTHANDLE **handle) noexcept {
     std::vector<LISTHANDLE::Info> result;
     try {
         auto list = repository_list.get_resp_list();
@@ -124,7 +128,7 @@ bool list_repository_info(LISTHANDLE **handle) {
     } catch (const std::exception &e) {
         error_reason = e.what();
         *handle = nullptr;
-        LOG_ERROR("{}抛出异常: {}", __PRETTY_FUNCTION__ ,e.what());
+        LOG_ERROR("{}抛出异常: {}", __PRETTY_FUNCTION__, e.what());
         return false;
     }
 
@@ -133,13 +137,13 @@ bool list_repository_info(LISTHANDLE **handle) {
     return true;
 }
 
-bool list_repository_info_uuid(LISTHANDLE **handle, const char *uuid) {
+bool list_repository_info_uuid(LISTHANDLE **handle, const char *uuid) noexcept {
     std::vector<LISTHANDLE::Info> result;
     try {
         auto list = repository_list.get_resp_list();
         std::unique_lock lock(repository_list.repo_lock, std::adopt_lock_t());
-        if(auto it = list.find(uuid);it != list.end()) {
-            RepositoryConfig& c = it->second;
+        if (auto it = list.find(uuid); it != list.end()) {
+            RepositoryConfig &c = it->second;
             LISTHANDLE::Info &info = result.emplace_back();
 
             info.uuid = c.uuid;
@@ -168,7 +172,7 @@ bool list_repository_info_uuid(LISTHANDLE **handle, const char *uuid) {
 
     } catch (const std::exception &e) {
         error_reason = e.what();
-        LOG_ERROR("{}抛出异常: {}", __PRETTY_FUNCTION__ ,e.what());
+        LOG_ERROR("{}抛出异常: {}", __PRETTY_FUNCTION__, e.what());
         *handle = nullptr;
         return false;
     }
@@ -178,14 +182,15 @@ bool list_repository_info_uuid(LISTHANDLE **handle, const char *uuid) {
     return true;
 }
 
-size_t get_repository_list_size(LISTHANDLE *handle) { 
-    if (handle == nullptr){
-        LOG_WARN("handle无效");;
+size_t get_repository_list_size(LISTHANDLE *handle) noexcept {
+    if (handle == nullptr) {
+        LOG_WARN("handle无效");
+        ;
     }
-    return handle == nullptr ? 0 : handle->info.size(); 
+    return handle == nullptr ? 0 : handle->info.size();
 }
 
-void get_repository_info(LISTHANDLE *handle, size_t index, RepositoryInfo *info) {
+void get_repository_info(LISTHANDLE *handle, size_t index, RepositoryInfo *info) noexcept {
     if (handle == nullptr || index >= handle->info.size()) {
         memset(info, 0, sizeof(RepositoryInfo));
         LOG_WARN("试图删除无效handle或index过大");
@@ -208,42 +213,42 @@ void get_repository_info(LISTHANDLE *handle, size_t index, RepositoryInfo *info)
     }
 }
 
-void close_list_handle(LISTHANDLE *handle) { 
-    if (handle != nullptr){
+void close_list_handle(LISTHANDLE *handle) noexcept {
+    if (handle != nullptr) {
         delete handle;
     } else {
         LOG_WARN("试图删除无效handle");
     }
 }
 
-bool immedately_backup_repository(const char *uuid) {
+bool immedately_backup_repository(const char *uuid) noexcept {
     try {
         repository_list.immedately_backup_repository(uuid);
     } catch (const std::exception &e) {
         error_reason = e.what();
-        LOG_ERROR("{}抛出异常: {}", __PRETTY_FUNCTION__ ,e.what());
+        LOG_ERROR("{}抛出异常: {}", __PRETTY_FUNCTION__, e.what());
         return false;
     }
     return true;
 }
 
-bool delete_repository(const char *uuid) {
+bool delete_repository(const char *uuid) noexcept {
     try {
         repository_list.delete_repository(uuid);
     } catch (const std::exception &e) {
         error_reason = e.what();
-        LOG_ERROR("{}抛出异常: {}", __PRETTY_FUNCTION__ ,e.what());
+        LOG_ERROR("{}抛出异常: {}", __PRETTY_FUNCTION__, e.what());
         return false;
     }
     return true;
 }
 
-bool recover_repository(const char *uuid, const char *password){
+bool recover_repository(const char *uuid, const char *password) noexcept {
     try {
         repository_list.recover_repository(uuid, password == nullptr ? "" : password);
     } catch (const std::exception &e) {
         error_reason = e.what();
-        LOG_ERROR("{}抛出异常: {}", __PRETTY_FUNCTION__ ,e.what());
+        LOG_ERROR("{}抛出异常: {}", __PRETTY_FUNCTION__, e.what());
         return false;
     }
     return true;

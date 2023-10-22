@@ -10,8 +10,8 @@ static std::unordered_map<std::string, std::unique_ptr<EncryptFactory>> encrypto
 
 void EncryptFactory::init_encryptor_table(){
     if (encryptor_table.empty()){
-        encryptor_table.insert_or_assign("none", std::make_unique<无加密>());
-        encryptor_table.insert_or_assign("ks256", std::make_unique<凯撒加密>());
+        encryptor_table.insert_or_assign("none", std::make_unique<NoEncryption>());
+        encryptor_table.insert_or_assign("ks256", std::make_unique<Ks256>());
     }
 }
 
