@@ -1,6 +1,6 @@
 #include "uuid.h"
-#include "winapi.h"
-#include "SyncerException.h"
+#include "../winapi.h"
+#include "../SyncerException.h"
 
 namespace Syncer {
     std::string generate_guid_string(){

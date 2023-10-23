@@ -2,7 +2,7 @@
 
 #include "Autobackup/AutoBackup.h"
 #include "Repository/RepositoryList.h"
-#include "base/log.h"
+#include "base/log/log.h"
 
 #ifndef __PRETTY_FUNCTION__
 #define __PRETTY_FUNCTION__ __FUNCTION__

@@ -1,7 +1,7 @@
 #include "AutoBackup.h"
 
 #include "../Repository/RepositoryList.h"
-#include "../base/log.h"
+#include "../base/log/log.h"
 
 namespace Syncer {
 AutoBackupManager autobackup_manager;

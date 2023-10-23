@@ -1,6 +1,6 @@
 #include "RepositoryList.h"
-#include "../base/log.h"
-#include "../base/uuid.h"
+#include "../base/log/log.h"
+#include "../base/uuid/uuid.h"
 #include "../base/winapi.h"
 #include "../base/SyncerException.h"
 #include <fstream>
@@ -54,6 +54,7 @@ void RepositoryList::register_repository(const RepositoryDesc *desc, char *uuid)
     config.custom_name = desc->custom_name;
     config.root = desc->source_path;
     config.target_path = desc->target_path;
+    config.filter_desc = desc->filter;
     config.do_packup = desc->do_packup;
     config.do_autobackup = desc->enable_autobackup;
     //config.autobackup_config.last_backup_time = SyTimePoint::min();

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../base/DataChunk.h"
+#include "../base/DataChunk/DataChunk.h"
 #include "../base/SyncerException.h"
 #include <string>
 #include <memory>

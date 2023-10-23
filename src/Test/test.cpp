@@ -38,8 +38,9 @@ void logic() {
     desc.encrypt_method = "ks256";
     desc.password = "123456";
     desc.do_packup = true;
+    desc.filter ="*.pmx\n*.png";
     desc.custom_name = "test";
-    desc.enable_autobackup = true;
+    desc.enable_autobackup = false;
     desc.auto_backup_config.interval = 5;
 
     char uuid[40];

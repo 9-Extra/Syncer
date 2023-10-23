@@ -1,7 +1,8 @@
 #pragma once
 
+#include "../sha/sha1.hpp"
+
 #include <filesystem>
-#include "sha1.hpp"
 #include <assert.h>
 
 namespace Syncer {

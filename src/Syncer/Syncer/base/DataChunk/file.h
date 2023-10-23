@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <filesystem>
 #include "DataChunk.h"
-#include "SyncerException.h"
+#include "../SyncerException.h"
 #include "HandleWrapper.h"
 
 template <> struct std::hash<FILE_ID_INFO> {

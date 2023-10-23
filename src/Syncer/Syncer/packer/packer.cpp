@@ -3,11 +3,11 @@
 #include "FileFiliter.h"
 #include "objectfile.h"
 
-#include "../base/HandleWrapper.h"
+#include "../base/DataChunk/HandleWrapper.h"
 #include "../base/SyncerException.h"
-#include "../base/file.h"
-#include "../base/log.h"
-#include "../base/md5.h"
+#include "../base/DataChunk/file.h"
+#include "../base/log/log.h"
+#include "../base/sha/md5.h"
 
 #include <unordered_map>
 namespace Syncer {
@@ -52,6 +52,7 @@ static DirectoryFiles load_file_list(const fs::path &root, const FileFiliter &fi
             fs::path standard_path = d.path().lexically_relative(root);
             fs::path abs_path = root / standard_path;
             if (filiter.filiter_path(standard_path)) {
+                std::cout << "选中文件:" << standard_path << std::endl;
                 switch (d.symlink_status().type()) {
                 case std::filesystem::file_type::regular: {
                     Syncer::HandleWrapper handle = Syncer::open_file_read(abs_path);
@@ -119,6 +120,7 @@ static DirectoryFiles load_file_list(const fs::path &root, const FileFiliter &fi
                 }
                 }
             }
+
         }
     } catch (const fs::filesystem_error &e) {
         throw Syncer::SyncerException(e.what());

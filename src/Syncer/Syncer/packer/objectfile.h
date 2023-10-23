@@ -1,5 +1,5 @@
 #pragma once
-#include "../base/DataChunk.h"
+#include "../base/DataChunk/DataChunk.h"
 #include "../base/winapi.h"
 #include <filesystem>
 #include <string>

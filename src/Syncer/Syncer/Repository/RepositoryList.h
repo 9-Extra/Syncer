@@ -1,7 +1,7 @@
 #pragma once
 
 #include "config.h"
-#include "../base/log.h"
+#include "../base/log/log.h"
 #include "../packer/packer.h"
 #include <Syncer/syncer.h>
 #include <mutex>
