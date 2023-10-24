@@ -8,7 +8,6 @@
 #define __PRETTY_FUNCTION__ __FUNCTION__
 #endif // !__PRETTY_FUNCTION__
 
-
 namespace Syncer {
 namespace fs = std::filesystem;
 
@@ -94,6 +93,28 @@ struct LISTHANDLE {
     };
 
     std::vector<Info> info;
+    static void copy_resp_info(const RepositoryConfig &c, Info &info) {
+        info.uuid = c.uuid;
+        info.custom_name = c.custom_name;
+        info.source_path = c.root.u8string();
+        info.target_path = c.target_path.u8string();
+        info.filter = c.filter_desc;
+
+        info.file_number = 0;
+        info.need_password = !(c.encryption.method == "none");
+
+        info.packup = c.do_packup;
+        info.enable_autobackup = c.do_autobackup;
+        if (c.autobackup_config.last_backup_time == SyTimePoint::min()) {
+            info.last_backup_time = "从未备份";
+        } else {
+            info.last_backup_time = to_loacltime(c.autobackup_config.last_backup_time);
+        }
+
+        if (info.enable_autobackup) {
+            info.auto_backup_config.interval = c.autobackup_config.interval;
+        }
+    }
 };
 bool list_repository_info(LISTHANDLE **handle) noexcept {
     std::vector<LISTHANDLE::Info> result;
@@ -102,27 +123,7 @@ bool list_repository_info(LISTHANDLE **handle) noexcept {
         std::unique_lock lock(repository_list.repo_lock, std::adopt_lock_t());
         for (const auto &[name, c] : list) {
             LISTHANDLE::Info &info = result.emplace_back();
-
-            info.uuid = c.uuid;
-            info.custom_name = c.custom_name;
-            info.source_path = c.root.u8string();
-            info.target_path = c.target_path.u8string();
-            info.filter = c.filter_desc;
-
-            info.file_number = 0;
-            info.need_password = c.encryption.method == "none" ? true : false;
-
-            info.packup = c.do_packup;
-            info.enable_autobackup = c.do_autobackup;
-            if (c.autobackup_config.last_backup_time == SyTimePoint::min()) {
-                info.last_backup_time = "从未备份";
-            } else {
-                info.last_backup_time = to_loacltime(c.autobackup_config.last_backup_time);
-            }
-
-            if (info.enable_autobackup) {
-                info.auto_backup_config.interval = c.autobackup_config.interval;
-            }
+            LISTHANDLE::copy_resp_info(c, info);
         }
 
     } catch (const std::exception &e) {
@@ -146,26 +147,7 @@ bool list_repository_info_uuid(LISTHANDLE **handle, const char *uuid) noexcept {
             RepositoryConfig &c = it->second;
             LISTHANDLE::Info &info = result.emplace_back();
 
-            info.uuid = c.uuid;
-            info.custom_name = c.custom_name;
-            info.source_path = c.root.u8string();
-            info.target_path = c.target_path.u8string();
-            info.filter = c.filter_desc;
-
-            info.file_number = 0;
-            info.need_password = c.encryption.method == "none" ? true : false;
-
-            info.packup = c.do_packup;
-            info.enable_autobackup = c.do_autobackup;
-            if (c.autobackup_config.last_backup_time == SyTimePoint::min()) {
-                info.last_backup_time = "从未备份";
-            } else {
-                info.last_backup_time = to_loacltime(c.autobackup_config.last_backup_time);
-            }
-
-            if (info.enable_autobackup) {
-                info.auto_backup_config.interval = c.autobackup_config.interval;
-            }
+            LISTHANDLE::copy_resp_info(c, info);
         } else {
             throw SyncerException("指定仓库不存在");
         }

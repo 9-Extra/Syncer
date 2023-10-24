@@ -47,9 +47,8 @@ void RepositoryList::register_repository(const RepositoryDesc *desc, char *uuid)
         throw SyncerException(std::format("不支持加密算法 \"{}\"", desc->encrypt_method));
     }
 
-    std::unique_lock lock(repo_lock);
     const std::string u = generate_guid_string();
-    RepositoryConfig &config = resp_list[u];
+    RepositoryConfig config;
     config.uuid = u;
     config.custom_name = desc->custom_name;
     config.root = std::u8string(desc->source_path);
@@ -66,12 +65,16 @@ void RepositoryList::register_repository(const RepositoryDesc *desc, char *uuid)
     config.encryption.key_hash = factory->generate_public_key((char*)desc->password);
 
     do_backup(config); // 立即进行一次备份
+    std::unique_lock lock(repo_lock);
+    resp_list.insert_or_assign(u, std::move(config));
     save_config_file(); // 保存
 
     LOG_INFO("创建仓库{}完成", config.uuid);
 
-    config.uuid.copy(uuid, config.uuid.size());
-    uuid[config.uuid.size()] = '\0';
+    if (uuid != nullptr){
+        u.copy(uuid, u.size());
+        uuid[u.size()] = '\0';
+    }
 }
 void RepositoryList::recover_repository(const char *uuid, const std::string &password) {
     {
