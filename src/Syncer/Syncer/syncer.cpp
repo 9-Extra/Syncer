@@ -79,9 +79,9 @@ bool register_repository(const RepositoryDesc *desc, char *uuid) noexcept {
 struct LISTHANDLE {
     struct Info {
         std::string uuid;
-        std::string custom_name;
-        fs::path source_path;
-        fs::path target_path;
+        std::u8string custom_name;
+        std::u8string source_path;
+        std::u8string target_path;
         std::string filter;
         std::string last_backup_time;
 
@@ -105,8 +105,8 @@ bool list_repository_info(LISTHANDLE **handle) noexcept {
 
             info.uuid = c.uuid;
             info.custom_name = c.custom_name;
-            info.source_path = c.root;
-            info.target_path = c.target_path;
+            info.source_path = c.root.u8string();
+            info.target_path = c.target_path.u8string();
             info.filter = c.filter_desc;
 
             info.file_number = 0;
@@ -148,8 +148,8 @@ bool list_repository_info_uuid(LISTHANDLE **handle, const char *uuid) noexcept {
 
             info.uuid = c.uuid;
             info.custom_name = c.custom_name;
-            info.source_path = c.root;
-            info.target_path = c.target_path;
+            info.source_path = c.root.u8string();
+            info.target_path = c.target_path.u8string();
             info.filter = c.filter_desc;
 
             info.file_number = 0;
@@ -199,8 +199,8 @@ void get_repository_info(LISTHANDLE *handle, size_t index, RepositoryInfo *info)
         const LISTHANDLE::Info &i = handle->info[index];
         info->uuid = i.uuid.c_str();
         info->custom_name = i.custom_name.c_str();
-        info->source_path = i.source_path.string().c_str();
-        info->target_path = i.target_path.string().c_str();
+        info->source_path = i.source_path.c_str();
+        info->target_path = i.target_path.c_str();
         info->filter = i.filter.c_str();
         info->last_backup_time = i.last_backup_time.c_str();
 

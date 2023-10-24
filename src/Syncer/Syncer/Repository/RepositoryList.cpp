@@ -52,8 +52,8 @@ void RepositoryList::register_repository(const RepositoryDesc *desc, char *uuid)
     RepositoryConfig &config = resp_list[u];
     config.uuid = u;
     config.custom_name = desc->custom_name;
-    config.root = desc->source_path;
-    config.target_path = desc->target_path;
+    config.root = std::u8string(desc->source_path);
+    config.target_path = std::u8string(desc->target_path);
     config.filter_desc = desc->filter;
     config.do_packup = desc->do_packup;
     config.do_autobackup = desc->enable_autobackup;
@@ -63,12 +63,12 @@ void RepositoryList::register_repository(const RepositoryDesc *desc, char *uuid)
     }
 
     config.encryption.method = desc->encrypt_method;
-    config.encryption.key_hash = factory->generate_public_key(desc->password);
+    config.encryption.key_hash = factory->generate_public_key((char*)desc->password);
 
     do_backup(config); // 立即进行一次备份
     save_config_file(); // 保存
 
-    LOG_INFO("创建仓库{}完成", config.custom_name);
+    LOG_INFO("创建仓库{}完成", config.uuid);
 
     config.uuid.copy(uuid, config.uuid.size());
     uuid[config.uuid.size()] = '\0';
@@ -78,7 +78,7 @@ void RepositoryList::recover_repository(const char *uuid, const std::string &pas
         std::unique_lock lock(repo_lock);
         if (auto it = resp_list.find(uuid); it != resp_list.end()) {
             RepositoryConfig &resp = it->second;
-            LOG_INFO("还原仓库{}到: {}", resp.custom_name, resp.root.string());
+            LOG_INFO("还原仓库{}到: {}", resp.uuid, resp.root.string());
 
             EncryptFactory *factory = EncryptFactory::find_encryptor(resp.encryption.method);
             if (factory == nullptr) {
@@ -100,7 +100,7 @@ void RepositoryList::recover_repository(const char *uuid, const std::string &pas
     }
 }
 void RepositoryList::do_backup(RepositoryConfig &config) {
-    LOG_INFO("正在备份仓库：{}", config.custom_name);
+    LOG_INFO("正在备份仓库：{}", config.uuid);
 
     try {
         EncryptFactory *factory = EncryptFactory::find_encryptor(config.encryption.method);
@@ -114,14 +114,11 @@ void RepositoryList::do_backup(RepositoryConfig &config) {
             pack(config.root, config.target_path, config.filter_desc, encoder.get());
         }
 
-        if (config.do_autobackup) {
-            config.autobackup_config.last_backup_time = SyTimePoint::clock::now();
-        }
+        config.autobackup_config.last_backup_time = SyTimePoint::clock::now();
     } catch (const SyncerException &e) {
         // 即使出现错误也要设置完成备份的时间
-        if (config.do_autobackup) {
-            config.autobackup_config.last_backup_time = SyTimePoint::clock::now();
-        }
+
+        config.autobackup_config.last_backup_time = SyTimePoint::clock::now();
         throw e; // 原样抛出
     } 
 }

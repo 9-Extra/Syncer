@@ -13,14 +13,24 @@ void logic() {
         return;
     }
 
-    // 输出所有仓库的信息并且删除
+    // 输出所有仓库的信息并且进行还原后删除
     Syncer::RepositoryInfo info;
     for (size_t i = 0; i < Syncer::get_repository_list_size(handle); i++) {
         Syncer::get_repository_info(handle, i, &info);
 
-        std::cout << "仓库名: " << info.custom_name << std::endl;
+        std::cout << "仓库名: " << (char*)info.custom_name << std::endl;
         std::cout << "上一次备份时间: " << info.last_backup_time << std::endl;
 
+        if (info.need_password)
+
+        // 进行还原
+        if (!Syncer::recover_repository(info.uuid, "123456")) {
+            Syncer::get_error_reason(error_reason, 512);
+            std::cerr << error_reason << std::endl;
+            return;
+        }
+
+        // 删除
         if (!Syncer::delete_repository(info.uuid)) {
             Syncer::get_error_reason(error_reason, 512);
             std::cerr << error_reason << std::endl;
@@ -33,13 +43,13 @@ void logic() {
 
     // 注册新的仓库
     Syncer::RepositoryDesc desc;
-    desc.source_path = R"(C:\Users\77313\Desktop\Sour式鏡音リンVer.2.01)";
-    desc.target_path = R"(C:\Users\77313\Desktop\111111111\1.pack)";
+    desc.source_path = u8R"(C:\Users\77313\Desktop\Sour式鏡音リンVer.2.01)";
+    desc.target_path = u8R"(C:\Users\77313\Desktop\111111111\1.pack)";
     desc.encrypt_method = "ks256";
-    desc.password = "123456";
+    desc.password = u8"123456";
     desc.do_packup = true;
-    desc.filter ="*.pmx\n*.png";
-    desc.custom_name = "test";
+    desc.filter ="";
+    desc.custom_name = u8"test";
     desc.enable_autobackup = false;
     desc.auto_backup_config.interval = 5;
 

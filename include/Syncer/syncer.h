@@ -29,13 +29,13 @@ struct AutoBackupDesc {
     unsigned int interval;
 };
 struct RepositoryDesc {
-    char const *custom_name; // 用户自定义名字，可以留空
-    char const *source_path; // 要备份的文件夹路径
-    char const *target_path; // 存储的路径，必须是一个文件夹路径（不存在会自动创建），而对于打包必须是一个文件路径
+    char8_t const *custom_name; // 用户自定义名字，可以留空
+    char8_t const *source_path; // 要备份的文件夹路径
+    char8_t const *target_path; // 存储的路径，必须是一个文件夹路径（不存在会自动创建），而对于打包必须是一个文件路径
     char const *filter;      // 过滤器，未实现
 
     char const *encrypt_method; // 加密算法，可选none（无加密），ks256（凯撒加密）
-    char const *password;       // 密码，无加密则填空字符串""
+    char8_t const *password;       // 密码，无加密则填空字符串""
 
     bool do_packup; // 以打包的形式备份
     bool enable_autobackup;
@@ -49,9 +49,9 @@ SYNCER_API bool register_repository(const RepositoryDesc *desc, char *uuid) noex
 
 struct RepositoryInfo {
     const char *uuid;
-    const char *custom_name;
-    const char *source_path;
-    const char *target_path;
+    const char8_t *custom_name;
+    const char8_t *source_path;
+    const char8_t *target_path;
     const char *filter;
     const char *last_backup_time;
 
